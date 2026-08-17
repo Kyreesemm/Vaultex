@@ -18,6 +18,18 @@
     }
   }
 
+  async function handleTitlebarMouseDown(event) {
+    if (event.button !== 0 || event.target.closest('.window-button')) return;
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const appWindow = getCurrentWindow();
+      if (event.detail === 2) await appWindow.toggleMaximize();
+      else await appWindow.startDragging();
+    } catch {
+      return undefined;
+    }
+  }
+
   const copy = {
     en: {
       greeting: 'Good evening, Alex',
@@ -86,14 +98,20 @@
 </svelte:head>
 
 <div class:light={theme === 'light'} class="app-shell" style={`--accent: ${accent}; --ui-scale: ${uiScale}`}>
-  <header class="brand-bar" data-tauri-drag-region>
+  <header class="brand-bar" role="toolbar" tabindex="0" aria-label="Window title bar" on:mousedown={handleTitlebarMouseDown}>
     <div class="brand-mark"><span></span></div>
     <div class="brand-name">Vaultex</div>
     <div class="brand-status"><span class="status-dot"></span>{t.protected}</div>
     <div class="window-controls">
-      <button class="window-button" aria-label="Minimize" on:click|stopPropagation={() => windowAction('minimize')}>−</button>
-      <button class="window-button" aria-label="Maximize" on:click|stopPropagation={() => windowAction('maximize')}>□</button>
-      <button class="window-button close" aria-label="Close" on:click|stopPropagation={() => windowAction('close')}>×</button>
+      <button class="window-button" aria-label="Minimize" on:click|stopPropagation={() => windowAction('minimize')}>
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" /></svg>
+      </button>
+      <button class="window-button" aria-label="Maximize" on:click|stopPropagation={() => windowAction('maximize')}>
+        <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7" rx=".6" /></svg>
+      </button>
+      <button class="window-button close" aria-label="Close" on:click|stopPropagation={() => windowAction('close')}>
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m3 3 6 6M9 3 3 9" /></svg>
+      </button>
     </div>
   </header>
 
