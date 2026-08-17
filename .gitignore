@@ -1,5 +1,16 @@
 # Rust build artifacts
 /target/
+**/target/
+
+# Frontend dependencies and build output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.svelte-kit/
+**/.svelte-kit/
+.vite/
+**/.vite/
 
 # Local environment and secrets
 .env
@@ -30,9 +41,9 @@ Desktop.ini
 # Tauri-generated local files
 src-tauri/target/
 src-tauri/gen/
+**/src-tauri/gen/
 
 # Coverage and profiling output
 coverage/
 *.profraw
 *.profdata
-
