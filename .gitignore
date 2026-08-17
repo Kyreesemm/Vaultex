@@ -1,0 +1,38 @@
+# Rust build artifacts
+/target/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.secret
+*.key
+*.pem
+
+# Local Vaultex vaults and backups
+*.vaultex
+*.vault
+*.vault.bak
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Tauri-generated local files
+src-tauri/target/
+src-tauri/gen/
+
+# Coverage and profiling output
+coverage/
+*.profraw
+*.profdata
+
