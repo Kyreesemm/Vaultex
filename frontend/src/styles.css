@@ -4,7 +4,7 @@ body { margin: 0; min-width: 320px; min-height: 100vh; }
 button { border: 0; color: inherit; font: inherit; cursor: pointer; }
 .app-shell { --bg: #101216; --surface: #17191e; --surface-2: #1d2026; --surface-3: #272a31; --line: rgba(255,255,255,.09); --text: #f1f2f4; --muted: #9297a2; --muted-2: #666c77; --accent: #9284ff; min-height: calc(100vh / var(--ui-scale)); zoom: var(--ui-scale); background: var(--bg); color: var(--text); transition: .35s ease; }
 .app-shell.light { --bg: #eef1f7; --surface: #fff; --surface-2: #f7f8fb; --surface-3: #edf0f7; --line: rgba(33,43,65,.1); --text: #202636; --muted: #727b90; --muted-2: #a1a9b8; background: var(--bg); }
-.brand-bar { height: 58px; display: flex; align-items: center; gap: 11px; padding: 0 30px; border-bottom: 1px solid rgba(255,255,255,.07); background: rgba(14,17,26,.72); backdrop-filter: blur(22px); position: relative; overflow: hidden; }
+.brand-bar { height: 58px; display: flex; align-items: center; gap: 11px; padding: 0 14px 0 30px; border-bottom: 1px solid rgba(255,255,255,.07); background: rgba(14,17,20,.94); backdrop-filter: blur(22px); position: relative; overflow: hidden; user-select: none; }
 .light .brand-bar { background: rgba(255,255,255,.68); border-color: rgba(33,43,65,.08); }
 .brand-mark { width: 18px; height: 18px; border: 1px solid #a69cff; border-radius: 6px; transform: rotate(45deg); box-shadow: 0 0 14px rgba(146,132,255,.8); }
 .brand-mark span { display: block; width: 7px; height: 7px; margin: 4px; background: #b6adff; border-radius: 2px; }
@@ -13,6 +13,10 @@ button { border: 0; color: inherit; font: inherit; cursor: pointer; }
 @keyframes glint { 0%, 58% { left: -28px; opacity: 0; } 66% { opacity: .9; } 82%, 100% { left: calc(100% + 20px); opacity: 0; } }
 .brand-status { margin-left: auto; color: #8a92a5; font-size: 11px; display: flex; align-items: center; gap: 8px; }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #76d3a4; box-shadow: 0 0 10px #76d3a4; }
+.window-controls { display: flex; align-self: stretch; margin-left: 18px; }
+.window-button { width: 45px; height: 100%; display: grid; place-items: center; color: var(--muted); background: transparent; font-size: 17px; font-weight: 400; line-height: 1; transition: .18s; }
+.window-button:hover { color: var(--text); background: var(--surface-2); }
+.window-button.close:hover { color: #fff; background: #c94f5d; }
 .workspace { display: flex; min-height: calc(100vh - 58px); }
 .sidebar { width: 245px; flex: 0 0 245px; padding: 26px 17px 22px; border-right: 1px solid var(--line); display: flex; flex-direction: column; background: rgba(13,16,24,.35); }
 .light .sidebar { background: rgba(255,255,255,.36); }

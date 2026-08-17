@@ -6,6 +6,18 @@
   let uiScale = 1.1;
   let showSettings = false;
 
+  async function windowAction(action) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const appWindow = getCurrentWindow();
+      if (action === 'minimize') await appWindow.minimize();
+      if (action === 'maximize') await appWindow.toggleMaximize();
+      if (action === 'close') await appWindow.close();
+    } catch {
+      return undefined;
+    }
+  }
+
   const copy = {
     en: {
       greeting: 'Good evening, Alex',
@@ -74,10 +86,15 @@
 </svelte:head>
 
 <div class:light={theme === 'light'} class="app-shell" style={`--accent: ${accent}; --ui-scale: ${uiScale}`}>
-  <header class="brand-bar">
+  <header class="brand-bar" data-tauri-drag-region>
     <div class="brand-mark"><span></span></div>
     <div class="brand-name">Vaultex</div>
     <div class="brand-status"><span class="status-dot"></span>{t.protected}</div>
+    <div class="window-controls">
+      <button class="window-button" aria-label="Minimize" on:click|stopPropagation={() => windowAction('minimize')}>−</button>
+      <button class="window-button" aria-label="Maximize" on:click|stopPropagation={() => windowAction('maximize')}>□</button>
+      <button class="window-button close" aria-label="Close" on:click|stopPropagation={() => windowAction('close')}>×</button>
+    </div>
   </header>
 
   <div class="workspace">
