@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added entry detail views opened by clicking a vault record.
+- Added hidden-by-default password display with reveal/hide controls.
+- Added copying for usernames, passwords, and notes from entry details.
 - Added functional Overview, Vault, and Generator sections with separate
   navigation and content.
 - Added full vault entry listing, direct navigation from overview cards, and

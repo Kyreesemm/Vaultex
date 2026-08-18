@@ -15,6 +15,9 @@
   let masterPassword = '';
   let entryForm = { title: '', username: '', password: '', notes: '' };
   let generatedPassword = '';
+  let selectedEntry = null;
+  let revealedPassword = false;
+  let copiedField = '';
   let errorMessage = '';
   let busy = false;
 
@@ -88,8 +91,27 @@
   }
 
   async function removeEntry(id) {
-    try { syncVault(await invoke('delete_entry', { id })); }
+    try {
+      syncVault(await invoke('delete_entry', { id }));
+      if (selectedEntry?.id === id) selectedEntry = null;
+    }
     catch (error) { errorMessage = String(error); }
+  }
+
+  function openEntry(entry) {
+    selectedEntry = entry;
+    revealedPassword = false;
+    copiedField = '';
+    errorMessage = '';
+  }
+
+  async function copyValue(value, field) {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      copiedField = field;
+      setTimeout(() => copiedField = '', 1400);
+    } catch (error) { errorMessage = `Unable to copy: ${error}`; }
   }
 
   async function makePassword() {
@@ -271,7 +293,7 @@
             <div class="recent-list">
               {#if entries.length === 0}<div class="empty-state">{unlocked ? 'Your vault is empty.' : 'Unlock your vault to see entries.'}</div>{/if}
               {#each entries.slice(0, 4) as item, index}
-                <div class="recent-item"><div class="item-icon {['violet', 'blue', 'amber'][index % 3]}">◈</div><div class="item-copy"><strong>{item.title}</strong><span>{item.username || 'No username'}</span></div><button class="item-delete" aria-label="Delete entry" on:click={() => removeEntry(item.id)}>×</button></div>
+                <div class="recent-item" role="button" tabindex="0" on:click={() => openEntry(item)} on:keydown={(event) => (event.key === 'Enter' || event.key === ' ') && openEntry(item)}><div class="item-icon {['violet', 'blue', 'amber'][index % 3]}">◈</div><div class="item-copy"><strong>{item.title}</strong><span>{item.username || 'No username'}</span></div><button class="item-delete" aria-label="Delete entry" on:click|stopPropagation={() => removeEntry(item.id)}>×</button></div>
               {/each}
             </div>
           </article>
@@ -290,7 +312,7 @@
         <section class="panel vault-list-panel">
           {#if entries.length === 0}<div class="empty-state">{unlocked ? 'Your vault is empty. Add your first entry.' : 'Unlock your vault to see entries.'}</div>{/if}
           {#each entries as item, index}
-            <div class="vault-row"><div class="item-icon {['violet', 'blue', 'amber'][index % 3]}">◈</div><div class="item-copy"><strong>{item.title}</strong><span>{item.username || 'No username'}{item.notes ? ` · ${item.notes}` : ''}</span></div><button class="item-delete" aria-label="Delete entry" on:click={() => removeEntry(item.id)}>Delete</button></div>
+            <div class="vault-row" role="button" tabindex="0" on:click={() => openEntry(item)} on:keydown={(event) => (event.key === 'Enter' || event.key === ' ') && openEntry(item)}><div class="item-icon {['violet', 'blue', 'amber'][index % 3]}">◈</div><div class="item-copy"><strong>{item.title}</strong><span>{item.username || 'No username'}{item.notes ? ` · ${item.notes}` : ''}</span></div><button class="item-delete" aria-label="Delete entry" on:click|stopPropagation={() => removeEntry(item.id)}>Delete</button></div>
           {/each}
         </section>
       {:else if activeSection === 'generator'}
@@ -302,7 +324,22 @@
     </main>
   </div>
 
-  {#if !vaultExists || !unlocked}
+  {#if selectedEntry}
+    <div class="modal-backdrop">
+      <div class="modal-card entry-details">
+        <button type="button" class="modal-close" aria-label="Close" on:click={() => selectedEntry = null}>×</button>
+        <div class="eyebrow"><span class="sparkle">◈</span> Protected entry</div>
+        <h2>{selectedEntry.title}</h2>
+        <div class="detail-list">
+          <div class="detail-row"><span>Username</span><strong>{selectedEntry.username || '—'}</strong><button disabled={!selectedEntry.username} on:click={() => copyValue(selectedEntry.username, 'username')}>{copiedField === 'username' ? 'Copied' : 'Copy'}</button></div>
+          <div class="detail-row"><span>Password</span><strong class:password-hidden={!revealedPassword}>{revealedPassword ? (selectedEntry.password || '—') : '••••••••••••'}</strong><button disabled={!selectedEntry.password} on:click={() => revealedPassword = !revealedPassword}>{revealedPassword ? 'Hide' : 'Show'}</button><button disabled={!selectedEntry.password} on:click={() => copyValue(selectedEntry.password, 'password')}>{copiedField === 'password' ? 'Copied' : 'Copy'}</button></div>
+          <div class="detail-row notes"><span>Notes</span><p>{selectedEntry.notes || '—'}</p><button disabled={!selectedEntry.notes} on:click={() => copyValue(selectedEntry.notes, 'notes')}>{copiedField === 'notes' ? 'Copied' : 'Copy'}</button></div>
+        </div>
+        {#if errorMessage}<div class="error-message">{errorMessage}</div>{/if}
+        <button class="modal-submit danger-submit" on:click={() => removeEntry(selectedEntry.id)}>Delete entry</button>
+      </div>
+    </div>
+  {:else if !vaultExists || !unlocked}
     <div class="modal-backdrop">
       <form class="modal-card" on:submit|preventDefault={submitVault}>
         <div class="modal-symbol">✦</div>
