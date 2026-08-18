@@ -121,6 +121,8 @@
       settings: 'Settings',
       accentColor: 'Accent color',
       interfaceScale: 'Interface scale',
+      comingSoon: 'In development',
+      locked: 'Vault locked',
     },
     ru: {
       greeting: 'Добрый вечер, Алекс',
@@ -143,17 +145,23 @@
       settings: 'Настройки',
       accentColor: 'Акцентный цвет',
       interfaceScale: 'Масштаб интерфейса',
+      comingSoon: 'В разработке',
+      locked: 'Хранилище заблокировано',
     },
   };
 
   $: t = copy[language];
 
   const navItems = [
-    { id: 'overview', icon: '⌂', key: 'overview' },
-    { id: 'vault', icon: '▣', key: 'vault' },
-    { id: 'generator', icon: '✦', key: 'generator' },
-    { id: 'identities', icon: '◎', key: 'identities' },
+    { id: 'overview', icon: '⌂', key: 'overview', available: true },
+    { id: 'vault', icon: '▣', key: 'vault', available: true },
+    { id: 'generator', icon: '✦', key: 'generator', available: true },
+    { id: 'identities', icon: '◎', key: 'identities', available: false },
   ];
+
+  function selectSection(item) {
+    if (item.available) activeSection = item.id;
+  }
 
 </script>
 
@@ -165,7 +173,7 @@
   <header class="brand-bar" role="toolbar" tabindex="0" aria-label="Window title bar" on:mousedown={handleTitlebarMouseDown}>
     <div class="brand-mark"><span></span></div>
     <div class="brand-name">Vaultex</div>
-    <div class="brand-status"><span class:locked={!unlocked} class="status-dot"></span>{unlocked ? t.protected : 'Vault locked'}</div>
+    <div class="brand-status"><span class:locked={!unlocked} class="status-dot"></span>{unlocked ? t.protected : t.locked}</div>
     <div class="window-controls">
       <button class="window-button" aria-label="Minimize" on:click|stopPropagation={() => windowAction('minimize')}>
         <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" /></svg>
@@ -193,10 +201,11 @@
       <nav aria-label="Main navigation">
         <div class="nav-label">Workspace</div>
         {#each navItems as item}
-          <button class:active={activeSection === item.id} class="nav-item" on:click={() => activeSection = item.id}>
+          <button class:active={activeSection === item.id} class="nav-item" class:unavailable={!item.available} disabled={!item.available} title={!item.available ? t.comingSoon : ''} on:click={() => selectSection(item)}>
             <span class="nav-icon">{item.icon}</span>
             <span>{t[item.key]}</span>
             {#if item.id === 'vault'}<span class="nav-count">{entries.length}</span>{/if}
+            {#if !item.available}<span class="nav-soon">Soon</span>{/if}
           </button>
         {/each}
       </nav>
@@ -214,7 +223,7 @@
       <div class="topbar">
         <div class="breadcrumbs"><span>Workspace</span><b>/</b><strong>{t[activeSection] || t.overview}</strong></div>
         <div class="top-actions">
-          <button class="round-button" aria-label="Notifications">♢<i></i></button>
+          <button class="round-button" aria-label="Notifications" disabled title={t.comingSoon}>♢<i></i></button>
           <div class="segmented-control" aria-label="Language selection">
             <button class:chosen={language === 'en'} on:click={() => language = 'en'}>EN</button>
             <button class:chosen={language === 'ru'} on:click={() => language = 'ru'}>RU</button>
@@ -240,43 +249,56 @@
         </div>
       {/if}
 
-      <section class="hero">
-        <div>
-          <div class="eyebrow"><span class="sparkle">✦</span> {t.welcome}</div>
-          <h1>{t.greeting}</h1>
-          <p>{t.subtitle}</p>
-        </div>
-        <div class="hero-orbit"><div class="orbit-ring ring-one"></div><div class="orbit-ring ring-two"></div><div class="orbit-core">✦</div></div>
-      </section>
-
-      <section class="stats-grid">
-        <article class="stat-card accent-violet"><div class="stat-icon">▣</div><span>{t.vault}</span><strong>{entries.length} <small>{t.items}</small></strong><div class="stat-line"></div></article>
-        <article class="stat-card accent-blue"><div class="stat-icon">✦</div><span>{t.generator}</span><strong>∞ <small>possibilities</small></strong><div class="stat-line"></div></article>
-        <article class="stat-card accent-amber"><div class="stat-icon">◷</div><span>{t.lastSync}</span><strong>100% <small>offline</small></strong><div class="stat-line"></div></article>
-      </section>
-
-      <section class="lower-grid">
-        <article class="panel recent-panel">
-          <div class="panel-heading"><div><h2>{t.recent}</h2><span>Protected items from your vault</span></div><button class="text-button">{t.seeAll} <b>↗</b></button></div>
-          <div class="recent-list">
-            {#if entries.length === 0}
-              <div class="empty-state">{unlocked ? 'Your vault is empty.' : 'Unlock your vault to see entries.'}</div>
-            {/if}
-            {#each entries as item, index}
-              <div class="recent-item"><div class="item-icon {['violet', 'blue', 'amber'][index % 3]}">◈</div><div class="item-copy"><strong>{item.title}</strong><span>{item.username || 'No username'}</span></div><button class="item-delete" aria-label="Delete entry" on:click={() => removeEntry(item.id)}>×</button></div>
-            {/each}
+      {#if activeSection === 'overview'}
+        <section class="hero">
+          <div>
+            <div class="eyebrow"><span class="sparkle">✦</span> {t.welcome}</div>
+            <h1>{t.greeting}</h1>
+            <p>{t.subtitle}</p>
           </div>
-        </article>
+          <div class="hero-orbit"><div class="orbit-ring ring-one"></div><div class="orbit-ring ring-two"></div><div class="orbit-core">✦</div></div>
+        </section>
 
-        <article class="panel actions-panel">
-          <div class="panel-heading"><div><h2>{t.quickActions}</h2><span>Keep your workflow moving</span></div></div>
-          <div class="action-list">
-            <button class="action-button primary" disabled={!unlocked} on:click={() => modal = 'entry'}><span class="action-symbol">＋</span><span><strong>{t.addEntry}</strong><small>Save a new secret</small></span><b>→</b></button>
-            <button class="action-button" on:click={() => { modal = 'generator'; makePassword(); }}><span class="action-symbol">✦</span><span><strong>{t.generate}</strong><small>Strong by default</small></span><b>→</b></button>
-            <button class="action-button"><span class="action-symbol">◎</span><span><strong>{t.identity}</strong><small>Names, aliases and more</small></span><b>→</b></button>
-          </div>
-        </article>
-      </section>
+        <section class="stats-grid">
+          <button class="stat-card accent-violet" on:click={() => activeSection = 'vault'}><div class="stat-icon">▣</div><span>{t.vault}</span><strong>{entries.length} <small>{t.items}</small></strong><div class="stat-line"></div></button>
+          <button class="stat-card accent-blue" on:click={() => activeSection = 'generator'}><div class="stat-icon">✦</div><span>{t.generator}</span><strong>∞ <small>possibilities</small></strong><div class="stat-line"></div></button>
+          <article class="stat-card accent-amber"><div class="stat-icon">◷</div><span>{t.lastSync}</span><strong>100% <small>offline</small></strong><div class="stat-line"></div></article>
+        </section>
+
+        <section class="lower-grid">
+          <article class="panel recent-panel">
+            <div class="panel-heading"><div><h2>{t.recent}</h2><span>Protected items from your vault</span></div><button class="text-button" on:click={() => activeSection = 'vault'}>{t.seeAll} <b>↗</b></button></div>
+            <div class="recent-list">
+              {#if entries.length === 0}<div class="empty-state">{unlocked ? 'Your vault is empty.' : 'Unlock your vault to see entries.'}</div>{/if}
+              {#each entries.slice(0, 4) as item, index}
+                <div class="recent-item"><div class="item-icon {['violet', 'blue', 'amber'][index % 3]}">◈</div><div class="item-copy"><strong>{item.title}</strong><span>{item.username || 'No username'}</span></div><button class="item-delete" aria-label="Delete entry" on:click={() => removeEntry(item.id)}>×</button></div>
+              {/each}
+            </div>
+          </article>
+
+          <article class="panel actions-panel">
+            <div class="panel-heading"><div><h2>{t.quickActions}</h2><span>Keep your workflow moving</span></div></div>
+            <div class="action-list">
+              <button class="action-button primary" disabled={!unlocked} on:click={() => modal = 'entry'}><span class="action-symbol">＋</span><span><strong>{t.addEntry}</strong><small>Save a new secret</small></span><b>→</b></button>
+              <button class="action-button" on:click={() => { modal = 'generator'; makePassword(); }}><span class="action-symbol">✦</span><span><strong>{t.generate}</strong><small>Strong by default</small></span><b>→</b></button>
+              <button class="action-button unavailable" disabled title={t.comingSoon}><span class="action-symbol">◎</span><span><strong>{t.identity}</strong><small>{t.comingSoon}</small></span><b>→</b></button>
+            </div>
+          </article>
+        </section>
+      {:else if activeSection === 'vault'}
+        <section class="page-heading"><div><div class="eyebrow"><span class="sparkle">▣</span> {t.vault}</div><h1>All protected entries</h1><p>Stored locally and encrypted with your master password.</p></div><button class="primary-button" disabled={!unlocked} on:click={() => modal = 'entry'}>＋ {t.addEntry}</button></section>
+        <section class="panel vault-list-panel">
+          {#if entries.length === 0}<div class="empty-state">{unlocked ? 'Your vault is empty. Add your first entry.' : 'Unlock your vault to see entries.'}</div>{/if}
+          {#each entries as item, index}
+            <div class="vault-row"><div class="item-icon {['violet', 'blue', 'amber'][index % 3]}">◈</div><div class="item-copy"><strong>{item.title}</strong><span>{item.username || 'No username'}{item.notes ? ` · ${item.notes}` : ''}</span></div><button class="item-delete" aria-label="Delete entry" on:click={() => removeEntry(item.id)}>Delete</button></div>
+          {/each}
+        </section>
+      {:else if activeSection === 'generator'}
+        <section class="page-heading"><div><div class="eyebrow"><span class="sparkle">✦</span> {t.generator}</div><h1>Secure password generator</h1><p>Generate passwords using the Rust cryptographic backend.</p></div></section>
+        <section class="panel generator-panel"><div class="generated-password large">{generatedPassword || 'Generate a password to begin'}</div><div class="generator-actions"><button class="primary-button" on:click={makePassword}>✦ {t.generate}</button><button class="secondary-button" disabled={!generatedPassword} on:click={() => navigator.clipboard?.writeText(generatedPassword)}>Copy password</button></div></section>
+      {:else}
+        <section class="unavailable-page"><div class="unavailable-icon">◎</div><h1>{t.identities}</h1><p>{t.comingSoon}. This section will be enabled when identity records are supported by the core.</p><span class="availability-badge">{t.comingSoon}</span></section>
+      {/if}
     </main>
   </div>
 

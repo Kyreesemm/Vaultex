@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added functional Overview, Vault, and Generator sections with separate
+  navigation and content.
+- Added full vault entry listing, direct navigation from overview cards, and
+  password copying from the Generator section.
 - Added the first functional UI-to-core integration through Tauri commands.
 - Added local vault creation and password-based unlocking.
 - Added encrypted persistence for vault entries on the device.
@@ -22,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Marked Identities, notifications, and identity creation as unavailable until
+  their corresponding functionality is implemented.
 - Established Linux/Wayland as the first desktop target, with Windows and
   Android planned as additional targets.
 - Reworked the title bar and bottom bar layout for the Linux application.
