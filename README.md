@@ -1,5 +1,8 @@
 # Vaultex
 
+Development version: `0.1.0`. See [CHANGELOG.md](CHANGELOG.md) for the change
+history.
+
 Vaultex is a cross-platform privacy vault for encrypted notes, accounts,
 passwords, and other sensitive personal data.
 
@@ -11,4 +14,3 @@ The core library supports versioned vault containers protected by Argon2id and
 authenticated encryption. AES-256-GCM is available for Android interoperability;
 XChaCha20-Poly1305 is also supported for platforms where its extended nonce is
 preferred.
-
