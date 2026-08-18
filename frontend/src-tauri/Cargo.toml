@@ -14,3 +14,6 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+vaultex-core = { path = "../../crates/vaultex-core" }
+getrandom = "0.2"
+serde = { version = "1", features = ["derive"] }

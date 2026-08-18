@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the first functional UI-to-core integration through Tauri commands.
+- Added local vault creation and password-based unlocking.
+- Added encrypted persistence for vault entries on the device.
+- Added entry creation, deletion, vault locking, and secure password generation.
 - Added the initial Vaultex encrypted-vault core library.
 - Added the Svelte + Vite user interface and Tauri desktop shell.
 - Added versioned vault containers protected by Argon2id and authenticated
