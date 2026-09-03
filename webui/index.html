@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#17191c" />
+  <title>Vaultex — приватное хранилище</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="icon-button menu-button" id="menuButton" aria-label="Открыть меню"><span class="material-symbols-rounded">menu</span></button>
+      <div class="brand">Vaultex</div>
+      <div class="topbar-spacer"></div>
+      <div class="vault-pill"><span class="status-dot"></span><span>Зашифровано</span></div>
+      <button class="icon-button" id="lockButton" aria-label="Заблокировать"><span class="material-symbols-rounded">lock</span></button>
+    </header>
+
+    <aside class="drawer" id="drawer">
+      <div class="drawer-head"><div class="brand small">Vaultex</div><button class="icon-button" id="closeDrawer"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="profile-card"><div class="avatar">V</div><div><strong>Личное хранилище</strong><small>Локально на этом устройстве</small></div></div>
+      <nav class="side-nav">
+        <button class="nav-item active" data-page="overview"><span class="material-symbols-rounded">grid_view</span>Обзор</button>
+        <button class="nav-item" data-page="notes"><span class="material-symbols-rounded">description</span>Заметки <em>12</em></button>
+        <button class="nav-item" data-page="secrets"><span class="material-symbols-rounded">key</span>Секреты <em>8</em></button>
+        <button class="nav-item" data-page="collections"><span class="material-symbols-rounded">folder_special</span>Коллекции</button>
+      </nav>
+      <div class="drawer-footer"><button class="nav-item" data-page="settings"><span class="material-symbols-rounded">settings</span>Настройки</button><div class="security-note"><span class="material-symbols-rounded">verified_user</span><span>Защищено<br><b>AES-256-GCM</b></span></div></div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <main class="content">
+      <section class="page active" id="page-overview">
+        <div class="page-heading"><div><p class="eyebrow">Добрый день, Алексей</p><h1>Ваше пространство</h1></div><button class="primary-button" data-action="new"><span class="material-symbols-rounded">add</span><span>Создать</span></button></div>
+        <div class="security-banner"><div class="banner-icon"><span class="material-symbols-rounded">shield_lock</span></div><div><strong>Хранилище защищено</strong><p>Все данные хранятся локально и шифруются на устройстве.</p></div><span class="material-symbols-rounded banner-check">check_circle</span></div>
+        <div class="stats-grid"><div class="stat-card"><span class="stat-icon purple"><span class="material-symbols-rounded">description</span></span><span class="stat-value">12</span><span class="stat-label">Заметок</span></div><div class="stat-card"><span class="stat-icon amber"><span class="material-symbols-rounded">key</span></span><span class="stat-value">8</span><span class="stat-label">Секретов</span></div><div class="stat-card"><span class="stat-icon blue"><span class="material-symbols-rounded">folder_special</span></span><span class="stat-value">4</span><span class="stat-label">Коллекции</span></div><div class="stat-card"><span class="stat-icon green"><span class="material-symbols-rounded">cloud_done</span></span><span class="stat-value">100%</span><span class="stat-label">Синхронизация</span></div></div>
+        <div class="section-title"><h2>Недавнее</h2><button class="text-button" data-page-link="notes">Все записи <span class="material-symbols-rounded">arrow_forward</span></button></div>
+        <div class="recent-list"><article class="entry-card" data-page-link="notes"><div class="entry-symbol purple"><span class="material-symbols-rounded">markdown</span></div><div class="entry-copy"><strong>Идеи для нового проекта</strong><p>Заметка · Изменено сегодня в 11:42</p></div><span class="material-symbols-rounded more">more_vert</span></article><article class="entry-card" data-page-link="secrets"><div class="entry-symbol amber"><span class="material-symbols-rounded">vpn_key</span></div><div class="entry-copy"><strong>GitHub · рабочий аккаунт</strong><p>Пароль · Изменено вчера в 19:08</p></div><span class="material-symbols-rounded more">more_vert</span></article><article class="entry-card" data-page-link="notes"><div class="entry-symbol blue"><span class="material-symbols-rounded">terminal</span></div><div class="entry-copy"><strong>Команды для деплоя</strong><p>Заметка · 28 августа 2026</p></div><span class="material-symbols-rounded more">more_vert</span></article></div>
+      </section>
+
+      <section class="page" id="page-notes"><div class="page-heading"><div><p class="eyebrow">Ваши записи</p><h1>Заметки</h1></div><button class="primary-button" data-action="new"><span class="material-symbols-rounded">add</span><span>Новая заметка</span></button></div><div class="searchbar"><span class="material-symbols-rounded">search</span><input placeholder="Поиск по заметкам..." /><span class="material-symbols-rounded">tune</span></div><div class="notes-grid"><article class="note-tile featured"><div class="tile-top"><span class="tag">MARKDOWN</span><span class="material-symbols-rounded">more_horiz</span></div><h3>Идеи для нового проекта</h3><p>Собрать всё важное в одном месте. Приватно, спокойно, без лишнего шума...</p><footer>Сегодня, 11:42 <span class="material-symbols-rounded">push_pin</span></footer></article><article class="note-tile"><div class="tile-top"><span class="tag blue-text">DEV</span><span class="material-symbols-rounded">more_horiz</span></div><h3>Команды для деплоя</h3><p>Полезные команды и короткие напоминания для релиза.</p><footer>28 августа 2026</footer></article><article class="note-tile"><div class="tile-top"><span class="tag green-text">ЛИЧНОЕ</span><span class="material-symbols-rounded">more_horiz</span></div><h3>Книги на осень</h3><p>Список книг, к которым хочется вернуться.</p><footer>17 августа 2026</footer></article></div></section>
+
+      <section class="page" id="page-secrets"><div class="page-heading"><div><p class="eyebrow">Чувствительные данные</p><h1>Секреты</h1></div><button class="primary-button" data-action="new"><span class="material-symbols-rounded">add</span><span>Добавить секрет</span></button></div><div class="secret-callout"><span class="material-symbols-rounded">info</span><span>Пароли, токены и ключи отображаются только после подтверждения.</span></div><div class="secret-list"><article class="secret-row"><div class="secret-icon github">GH</div><div><strong>GitHub · рабочий аккаунт</strong><p>Пароль · Обновлено вчера</p></div><button class="reveal"><span class="material-symbols-rounded">visibility</span>Показать</button></article><article class="secret-row"><div class="secret-icon aws">AWS</div><div><strong>AWS production</strong><p>Access key · Обновлено 24 августа</p></div><button class="reveal"><span class="material-symbols-rounded">visibility</span>Показать</button></article><article class="secret-row"><div class="secret-icon telegram">TG</div><div><strong>Telegram Bot</strong><p>Токен · Обновлено 11 августа</p></div><button class="reveal"><span class="material-symbols-rounded">visibility</span>Показать</button></article></div></section>
+
+      <section class="page" id="page-collections"><div class="page-heading"><div><p class="eyebrow">Организация</p><h1>Коллекции</h1></div><button class="primary-button" data-action="new"><span class="material-symbols-rounded">create_new_folder</span><span>Новая коллекция</span></button></div><div class="collection-grid"><div class="collection-card"><span class="collection-icon purple"><span class="material-symbols-rounded">code</span></span><h3>Разработка</h3><p>7 записей</p></div><div class="collection-card"><span class="collection-icon amber"><span class="material-symbols-rounded">travel_explore</span></span><h3>Путешествия</h3><p>5 записей</p></div><div class="collection-card"><span class="collection-icon green"><span class="material-symbols-rounded">self_improvement</span></span><h3>Личное</h3><p>8 записей</p></div></div></section>
+
+      <section class="page" id="page-settings"><div class="page-heading"><div><p class="eyebrow">Параметры приложения</p><h1>Настройки</h1></div></div><div class="settings-card"><h2>Безопасность</h2><div class="settings-row"><div><strong>Автоблокировка</strong><p>Блокировать хранилище через 5 минут бездействия</p></div><label class="switch"><input type="checkbox" checked><span></span></label></div><div class="settings-row"><div><strong>Биометрия</strong><p>Использовать отпечаток или Face ID для разблокировки</p></div><label class="switch"><input type="checkbox" checked><span></span></label></div><div class="settings-row"><div><strong>Скрывать содержимое</strong><p>Очищать превью из списка последних приложений</p></div><label class="switch"><input type="checkbox"><span></span></label></div></div><div class="settings-card"><h2>Шифрование</h2><div class="algorithm"><span class="material-symbols-rounded">enhanced_encryption</span><div><strong>AES-256-GCM</strong><p>Аутентифицированное шифрование данных</p></div><span class="verified">Активно</span></div></div></section>
+    </main>
+    <nav class="bottom-nav"><button class="bottom-item active" data-page="overview"><span class="material-symbols-rounded">grid_view</span><small>Обзор</small></button><button class="bottom-item" data-page="notes"><span class="material-symbols-rounded">description</span><small>Заметки</small></button><button class="bottom-item" data-page="secrets"><span class="material-symbols-rounded">key</span><small>Секреты</small></button><button class="bottom-item" data-page="collections"><span class="material-symbols-rounded">folder_special</span><small>Коллекции</small></button></nav>
+  </div>
+  <div class="toast" id="toast"><span class="material-symbols-rounded">check_circle</span><span id="toastText">Готово</span></div>
+  <script src="script.js"></script>
+</body>
+</html>

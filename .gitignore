@@ -1,0 +1,10 @@
+# Private/local reference materials
+no-public/
+
+# Rust build artifacts
+/target/
+
+# Local editor and OS files
+.DS_Store
+.idea/
+.vscode/
