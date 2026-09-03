@@ -4,8 +4,7 @@
   "version": "0.1.0",
   "identifier": "dev.vaultex.app",
   "build": {
-    "frontendDist": "../webui",
-    "devUrl": "http://localhost:1420"
+    "frontendDist": "../webui"
   },
   "app": {
     "windows": [
