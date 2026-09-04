@@ -1,0 +1,28 @@
+# Changelog
+
+All notable changes to the **Vaultex** project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Added the initial Vaultex Tauri 2 application shell with a Rust backend.
+- Added an adaptive HTML, CSS, and JavaScript interface for Windows, Linux, and Android targets.
+- Added navigation pages for the overview, notes, secrets, collections, and settings.
+- Added a desktop drawer navigation and a mobile bottom navigation bar.
+- Added the initial dark Graffiti Grey visual theme with a softly illuminated animated Vaultex wordmark.
+- Added local bundled Roboto and Material Symbols Rounded fonts for offline interface rendering.
+- Added the initial Rust `vault_status` command for the application shell.
+- Added a fallback application icon for Tauri builds.
+
+### Changed
+- Reused the visual direction and typography approach from the existing WebFlow Runtime interface example.
+- Moved frontend font assets into `webui/fonts` so the application does not depend on ignored `no-public` materials.
+- Configured Tauri to load the static interface directly from the `webui` directory without requiring a separate development HTTP server.
+- Added project and build artifact exclusions to `.gitignore`.
+
+### Fixed
+- Added a Linux Wayland/WebKitGTK graphics workaround for the DMA-BUF and NVIDIA explicit synchronization startup issue.
+- Removed the static UI's dependency on an unavailable `localhost:1420` development server that could result in an HTTP 404 page.
