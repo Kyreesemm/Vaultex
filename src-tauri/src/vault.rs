@@ -50,6 +50,8 @@ pub enum VaultError {
     Encryption,
     #[error("decryption failed or authentication failed")]
     Decryption,
+    #[error("vault session has not been initialized with a password")]
+    MissingWrappedKey,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

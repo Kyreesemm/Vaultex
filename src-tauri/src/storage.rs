@@ -55,6 +55,7 @@ pub struct VaultRecord {
 pub struct VaultStore {
     vault_id: [u8; 16],
     data_key: VaultKey,
+    wrapped_key: Option<KeyEnvelope>,
     kdf_params: KdfParams,
     salt: [u8; SALT_LENGTH],
     records: BTreeMap<RecordId, VaultRecord>,
@@ -70,6 +71,7 @@ impl VaultStore {
         Ok(Self {
             vault_id,
             data_key: VaultKey::generate()?,
+            wrapped_key: None,
             kdf_params: KdfParams::default(),
             salt,
             records: BTreeMap::new(),
@@ -105,7 +107,7 @@ impl VaultStore {
         let password_key = derive_key_with_params(password, &salt, kdf_params)?;
         let data_key_bytes = VaultCrypto::decrypt_with_key(
             &password_key,
-            &KeyEnvelope { nonce: wrapped_nonce, ciphertext: wrapped_ciphertext },
+            &KeyEnvelope { nonce: wrapped_nonce, ciphertext: wrapped_ciphertext.clone() },
             &wrap_aad(&vault_id),
         )?;
         if data_key_bytes.len() != KEY_LENGTH {
@@ -143,7 +145,14 @@ impl VaultStore {
             records.insert(id, VaultRecord { kind, revision, payload });
         }
 
-        Ok(Self { vault_id, data_key, kdf_params, salt, records })
+        Ok(Self {
+            vault_id,
+            data_key,
+            wrapped_key: Some(KeyEnvelope { nonce: wrapped_nonce, ciphertext: wrapped_ciphertext }),
+            kdf_params,
+            salt,
+            records,
+        })
     }
 
     pub fn insert(
@@ -180,17 +189,33 @@ impl VaultStore {
         self.records.remove(&id).map(|_| ()).ok_or(VaultError::InvalidEnvelope)
     }
 
-    pub fn commit(&self, password: &[u8]) -> Result<Vec<u8>, VaultError> {
-        if self.records.len() > MAX_RECORDS {
-            return Err(VaultError::InvalidEnvelope);
-        }
-
+    pub fn commit_with_password(&self, password: &[u8]) -> Result<Vec<u8>, VaultError> {
         let password_key = derive_key_with_params(password, &self.salt, self.kdf_params)?;
         let wrapped_key = VaultCrypto::encrypt_with_key(
             &password_key,
             self.data_key.as_bytes(),
             &wrap_aad(&self.vault_id),
         )?;
+        self.commit_with_wrapped_key(&wrapped_key)
+    }
+
+    pub fn commit(&self, password: &[u8]) -> Result<Vec<u8>, VaultError> {
+        self.commit_with_password(password)
+    }
+
+    pub fn commit_unlocked(&self) -> Result<Vec<u8>, VaultError> {
+        let wrapped_key = self.wrapped_key.as_ref().ok_or(VaultError::MissingWrappedKey)?;
+        self.commit_with_wrapped_key(wrapped_key)
+    }
+
+    pub fn lock(self) {
+        drop(self);
+    }
+
+    fn commit_with_wrapped_key(&self, wrapped_key: &KeyEnvelope) -> Result<Vec<u8>, VaultError> {
+        if self.records.len() > MAX_RECORDS {
+            return Err(VaultError::InvalidEnvelope);
+        }
 
         let mut blocks = Vec::with_capacity(self.records.len());
         let mut manifest = Writer::new();

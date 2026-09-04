@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added unlocked-session persistence so an already opened vault can be saved without re-entering the master password.
+- Added explicit `VaultStore::lock()` lifecycle operation that drops the in-memory vault session.
 - Added cross-platform `VaultFile` persistence with atomic encrypted-file replacement.
 - Added temporary-file creation with collision resistance, write flushing, and parent-directory syncing on Unix.
 - Added Windows atomic replacement using `MoveFileExW` with replace and write-through flags.

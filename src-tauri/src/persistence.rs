@@ -33,6 +33,11 @@ impl VaultFile {
         let bytes = store.commit(password)?;
         atomic_replace(path, &bytes)
     }
+
+    pub fn save_unlocked(path: &Path, store: &VaultStore) -> Result<(), PersistenceError> {
+        let bytes = store.commit_unlocked()?;
+        atomic_replace(path, &bytes)
+    }
 }
 
 fn atomic_replace(path: &Path, bytes: &[u8]) -> Result<(), PersistenceError> {
@@ -146,6 +151,31 @@ mod tests {
         assert!(matches!(
             VaultFile::load(&path, b"wrong password"),
             Err(PersistenceError::Vault(VaultError::Decryption))
+        ));
+    }
+
+    #[test]
+    fn unlocked_session_can_save_without_password() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("personal.vault");
+        let second_path = directory.path().join("personal-2.vault");
+        let mut store = VaultStore::create().unwrap();
+        store.insert(RecordKind::Secret, b"session secret".to_vec()).unwrap();
+        VaultFile::save(&path, &store, PASSWORD).unwrap();
+
+        let restored = VaultFile::load(&path, PASSWORD).unwrap();
+        VaultFile::save_unlocked(&second_path, &restored).unwrap();
+        assert!(VaultFile::load(&second_path, PASSWORD).is_ok());
+    }
+
+    #[test]
+    fn new_session_requires_password_for_first_save() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("new.vault");
+        let store = VaultStore::create().unwrap();
+        assert!(matches!(
+            VaultFile::save_unlocked(&path, &store),
+            Err(PersistenceError::Vault(VaultError::MissingWrappedKey))
         ));
     }
 }
