@@ -4285,7 +4285,9 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "tempfile",
  "thiserror 2.0.20",
+ "windows-sys 0.59.0",
  "zeroize",
 ]
 

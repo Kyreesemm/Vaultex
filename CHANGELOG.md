@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added cross-platform `VaultFile` persistence with atomic encrypted-file replacement.
+- Added temporary-file creation with collision resistance, write flushing, and parent-directory syncing on Unix.
+- Added Windows atomic replacement using `MoveFileExW` with replace and write-through flags.
+- Added persistence tests for disk round-trips, plaintext absence, and failed-password handling.
 - Added a versioned binary Vaultex storage container with a clear structural frame and encrypted payload regions.
 - Added a password-wrapped random vault data-encryption key so records do not derive independent keys directly from the password.
 - Added an encrypted manifest for record identity, type, revision, and block mapping.
