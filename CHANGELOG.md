@@ -22,7 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved frontend font assets into `webui/fonts` so the application does not depend on ignored `no-public` materials.
 - Configured Tauri to load the static interface directly from the `webui` directory without requiring a separate development HTTP server.
 - Added project and build artifact exclusions to `.gitignore`.
+- Restored the standard native window decorations for desktop environments.
+- Configured Linux Wayland sessions to use the Plasma-compatible XWayland path by default.
 
 ### Fixed
 - Added a Linux Wayland/WebKitGTK graphics workaround for the DMA-BUF and NVIDIA explicit synchronization startup issue.
 - Removed the static UI's dependency on an unavailable `localhost:1420` development server that could result in an HTTP 404 page.
+- Removed the custom titlebar and returned window rendering to the native Wayland/GTK/Plasma titlebar.
+- Added a visible 128×128 application icon for native Linux window decorations.

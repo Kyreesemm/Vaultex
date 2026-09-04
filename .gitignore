@@ -1,5 +1,6 @@
 # Private/local reference materials
 no-public/
+AGENTS.md
 
 # Rust build artifacts
 /target/

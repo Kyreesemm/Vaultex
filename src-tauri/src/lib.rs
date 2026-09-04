@@ -4,9 +4,19 @@ use serde::Serialize;
 
 #[cfg(target_os = "linux")]
 fn configure_linux_graphics() {
-    // WebKitGTK's DMA-BUF renderer can emit Wayland protocol errors on
-    // current Linux/NVIDIA combinations. This must be set before GTK starts.
+    // On KDE Plasma under Wayland, GTK native decorations are client-side.
+    // Running the GTK window through XWayland lets KWin draw its normal
+    // Plasma decoration, matching the rest of the desktop applications.
     if std::env::var_os("WAYLAND_DISPLAY").is_some()
+        && std::env::var_os("GDK_BACKEND").is_none()
+    {
+        std::env::set_var("GDK_BACKEND", "x11");
+    }
+
+    // Keep the WebKitGTK workaround for users who explicitly select native
+    // Wayland rather than the default Plasma/XWayland path above.
+    if std::env::var_os("WAYLAND_DISPLAY").is_some()
+        && std::env::var_os("GDK_BACKEND").as_deref() == Some(std::ffi::OsStr::new("wayland"))
         && std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none()
     {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
