@@ -3,6 +3,7 @@
 use serde::Serialize;
 
 pub mod vault;
+pub mod storage;
 
 #[cfg(target_os = "linux")]
 fn configure_linux_graphics() {

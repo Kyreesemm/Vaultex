@@ -19,6 +19,25 @@ const ARGON2_ITERATIONS: u32 = 3;
 const ARGON2_PARALLELISM: u32 = 1;
 const AAD_PREFIX: &[u8] = b"vaultex-envelope-v1\0";
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct KdfParams {
+    pub memory_kib: u32,
+    pub iterations: u32,
+    pub parallelism: u32,
+    pub output_length: usize,
+}
+
+impl Default for KdfParams {
+    fn default() -> Self {
+        Self {
+            memory_kib: ARGON2_MEMORY_KIB,
+            iterations: ARGON2_ITERATIONS,
+            parallelism: ARGON2_PARALLELISM,
+            output_length: KEY_LENGTH,
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum VaultError {
     #[error("invalid key derivation parameters")]
@@ -41,11 +60,27 @@ pub struct EncryptedEnvelope {
     pub ciphertext: Vec<u8>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct KeyEnvelope {
+    pub nonce: [u8; NONCE_LENGTH],
+    pub ciphertext: Vec<u8>,
+}
+
 #[derive(Zeroize, ZeroizeOnDrop)]
 pub struct VaultKey([u8; KEY_LENGTH]);
 
 impl VaultKey {
-    fn as_bytes(&self) -> &[u8; KEY_LENGTH] {
+    pub(crate) fn generate() -> Result<Self, VaultError> {
+        let mut key = [0u8; KEY_LENGTH];
+        OsRng.try_fill_bytes(&mut key).map_err(|_| VaultError::Randomness)?;
+        Ok(Self(key))
+    }
+
+    pub(crate) fn from_bytes(bytes: [u8; KEY_LENGTH]) -> Self {
+        Self(bytes)
+    }
+
+    pub(crate) fn as_bytes(&self) -> &[u8; KEY_LENGTH] {
         &self.0
     }
 }
@@ -64,16 +99,12 @@ impl VaultCrypto {
         OsRng.try_fill_bytes(&mut nonce).map_err(|_| VaultError::Randomness)?;
 
         let key = derive_key(password, &salt)?;
-        let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key.as_bytes()));
-        let ciphertext = cipher
-            .encrypt(
-                Nonce::from_slice(&nonce),
-                Payload {
-                    msg: plaintext,
-                    aad: &authenticated_data(ENVELOPE_VERSION, associated_data),
-                },
-            )
-            .map_err(|_| VaultError::Encryption)?;
+        let ciphertext = encrypt_with_key(
+            &key,
+            &nonce,
+            plaintext,
+            &authenticated_data(ENVELOPE_VERSION, associated_data),
+        )?;
 
         Ok(EncryptedEnvelope {
             version: ENVELOPE_VERSION,
@@ -91,16 +122,12 @@ impl VaultCrypto {
         validate_envelope(envelope)?;
 
         let key = derive_key(password, &envelope.salt)?;
-        let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key.as_bytes()));
-        let plaintext = cipher
-            .decrypt(
-                Nonce::from_slice(&envelope.nonce),
-                Payload {
-                    msg: &envelope.ciphertext,
-                    aad: &authenticated_data(envelope.version, associated_data),
-                },
-            )
-            .map_err(|_| VaultError::Decryption)?;
+        let plaintext = decrypt_with_key(
+            &key,
+            &envelope.nonce,
+            &envelope.ciphertext,
+            &authenticated_data(envelope.version, associated_data),
+        )?;
 
         Ok(Zeroizing::new(plaintext))
     }
@@ -113,14 +140,52 @@ impl VaultCrypto {
         let plaintext = Self::decrypt(password, envelope, associated_data)?;
         Self::encrypt(password, &plaintext, associated_data)
     }
+
+    pub(crate) fn encrypt_with_key(
+        key: &VaultKey,
+        plaintext: &[u8],
+        associated_data: &[u8],
+    ) -> Result<KeyEnvelope, VaultError> {
+        let mut nonce = [0u8; NONCE_LENGTH];
+        OsRng.try_fill_bytes(&mut nonce).map_err(|_| VaultError::Randomness)?;
+        let ciphertext = encrypt_with_key(key, &nonce, plaintext, associated_data)?;
+        Ok(KeyEnvelope { nonce, ciphertext })
+    }
+
+    pub(crate) fn decrypt_with_key(
+        key: &VaultKey,
+        envelope: &KeyEnvelope,
+        associated_data: &[u8],
+    ) -> Result<Zeroizing<Vec<u8>>, VaultError> {
+        if envelope.ciphertext.len() < AUTH_TAG_LENGTH {
+            return Err(VaultError::InvalidEnvelope);
+        }
+        Ok(Zeroizing::new(decrypt_with_key(
+            key,
+            &envelope.nonce,
+            &envelope.ciphertext,
+            associated_data,
+        )?))
+    }
 }
 
 fn derive_key(password: &[u8], salt: &[u8; SALT_LENGTH]) -> Result<VaultKey, VaultError> {
+    derive_key_with_params(password, salt, KdfParams::default())
+}
+
+pub(crate) fn derive_key_with_params(
+    password: &[u8],
+    salt: &[u8; SALT_LENGTH],
+    params: KdfParams,
+) -> Result<VaultKey, VaultError> {
+    if params.output_length != KEY_LENGTH {
+        return Err(VaultError::InvalidKdfParameters);
+    }
     let params = Params::new(
-        ARGON2_MEMORY_KIB,
-        ARGON2_ITERATIONS,
-        ARGON2_PARALLELISM,
-        Some(KEY_LENGTH),
+        params.memory_kib,
+        params.iterations,
+        params.parallelism,
+        Some(params.output_length),
     )
     .map_err(|_| VaultError::InvalidKdfParameters)?;
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
@@ -129,6 +194,36 @@ fn derive_key(password: &[u8], salt: &[u8; SALT_LENGTH]) -> Result<VaultKey, Vau
         .hash_password_into(password, salt, &mut key)
         .map_err(|_| VaultError::InvalidKdfParameters)?;
     Ok(VaultKey(key))
+}
+
+fn encrypt_with_key(
+    key: &VaultKey,
+    nonce: &[u8; NONCE_LENGTH],
+    plaintext: &[u8],
+    associated_data: &[u8],
+) -> Result<Vec<u8>, VaultError> {
+    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key.as_bytes()));
+    cipher
+        .encrypt(
+            Nonce::from_slice(nonce),
+            Payload { msg: plaintext, aad: associated_data },
+        )
+        .map_err(|_| VaultError::Encryption)
+}
+
+fn decrypt_with_key(
+    key: &VaultKey,
+    nonce: &[u8; NONCE_LENGTH],
+    ciphertext: &[u8],
+    associated_data: &[u8],
+) -> Result<Vec<u8>, VaultError> {
+    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key.as_bytes()));
+    cipher
+        .decrypt(
+            Nonce::from_slice(nonce),
+            Payload { msg: ciphertext, aad: associated_data },
+        )
+        .map_err(|_| VaultError::Decryption)
 }
 
 fn authenticated_data(version: u8, associated_data: &[u8]) -> Vec<u8> {

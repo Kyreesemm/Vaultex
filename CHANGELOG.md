@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added a versioned binary Vaultex storage container with a clear structural frame and encrypted payload regions.
+- Added a password-wrapped random vault data-encryption key so records do not derive independent keys directly from the password.
+- Added an encrypted manifest for record identity, type, revision, and block mapping.
+- Added the in-memory `VaultStore` session with create, unlock, insert, read, update, remove, and commit operations.
+- Added zeroizing in-memory record payloads and bounds checks for malformed or oversized containers.
+- Added storage tests for round-trips, wrong-password unlocks, record tampering, updates, and removals.
 - Added a format-independent Rust cryptographic core for encrypted vault payloads.
 - Added Argon2id key derivation with a 64 MiB memory cost, three iterations, and a 256-bit derived key.
 - Added AES-256-GCM encryption with authenticated associated data, random salts, and random nonces.
