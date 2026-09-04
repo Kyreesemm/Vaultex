@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "identifier": "dev.vaultex.app",
   "build": {
+    "beforeDevCommand": "python3 -m http.server 1420 --directory webui",
+    "devUrl": "http://127.0.0.1:1420",
     "frontendDist": "../webui"
   },
   "app": {

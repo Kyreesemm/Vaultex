@@ -30,3 +30,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the static UI's dependency on an unavailable `localhost:1420` development server that could result in an HTTP 404 page.
 - Removed the custom titlebar and returned window rendering to the native Wayland/GTK/Plasma titlebar.
 - Added a visible 128×128 application icon for native Linux window decorations.
+- Disabled the Linux WebKitGTK DMA-BUF renderer when it prevents the UI webview from rendering.

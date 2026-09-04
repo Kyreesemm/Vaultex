@@ -13,13 +13,15 @@ fn configure_linux_graphics() {
         std::env::set_var("GDK_BACKEND", "x11");
     }
 
-    // Keep the WebKitGTK workaround for users who explicitly select native
-    // Wayland rather than the default Plasma/XWayland path above.
-    if std::env::var_os("WAYLAND_DISPLAY").is_some()
-        && std::env::var_os("GDK_BACKEND").as_deref() == Some(std::ffi::OsStr::new("wayland"))
-        && std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none()
-    {
+    // WebKitGTK may still use a GBM/DMA-BUF path through XWayland. Disable it
+    // for the Linux build unless the user has explicitly chosen another value.
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
+
+    if std::env::var_os("WAYLAND_DISPLAY").is_some()
+        && std::env::var_os("__NV_DISABLE_EXPLICIT_SYNC").is_none()
+    {
         std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1");
     }
 }
