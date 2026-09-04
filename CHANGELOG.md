@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added a format-independent Rust cryptographic core for encrypted vault payloads.
+- Added Argon2id key derivation with a 64 MiB memory cost, three iterations, and a 256-bit derived key.
+- Added AES-256-GCM encryption with authenticated associated data, random salts, and random nonces.
+- Added encrypted envelope validation, authentication failure handling, and zeroizing decrypted buffers.
+- Added re-encryption support for rotating an encrypted payload's salt and nonce.
+- Added unit tests covering encryption round-trips, wrong passwords, tampering, AAD binding, version validation, and re-encryption.
 - Added the initial Vaultex Tauri 2 application shell with a Rust backend.
 - Added an adaptive HTML, CSS, and JavaScript interface for Windows, Linux, and Android targets.
 - Added navigation pages for the overview, notes, secrets, collections, and settings.

@@ -2,6 +2,8 @@
 
 use serde::Serialize;
 
+pub mod vault;
+
 #[cfg(target_os = "linux")]
 fn configure_linux_graphics() {
     // On KDE Plasma under Wayland, GTK native decorations are client-side.
