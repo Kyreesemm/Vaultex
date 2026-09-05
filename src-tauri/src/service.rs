@@ -73,6 +73,7 @@ pub struct VaultStatusDto {
     pub algorithm: &'static str,
     pub path: Option<String>,
     pub dirty: bool,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -112,13 +113,14 @@ pub fn vault_status(state: State<'_, AppState>) -> Result<VaultStatusDto, ApiErr
             algorithm: ALGORITHM,
             path: Some(active.path.to_string_lossy().into_owned()),
             dirty: active.dirty,
+            name: Some(active.store.name().to_owned()),
         },
-        None => VaultStatusDto { locked: true, algorithm: ALGORITHM, path: None, dirty: false },
+        None => VaultStatusDto { locked: true, algorithm: ALGORITHM, path: None, dirty: false, name: None },
     })
 }
 
 #[tauri::command]
-pub fn vault_create(state: State<'_, AppState>, path: String, password: String) -> Result<(), ApiError> {
+pub fn vault_create(state: State<'_, AppState>, path: String, name: String, password: String) -> Result<(), ApiError> {
     let path = validate_path(path)?;
     let password = Zeroizing::new(password);
     let mut guard = state.session.lock().map_err(|_| ApiError::new("state_error", "Application state is unavailable"))?;
@@ -126,7 +128,7 @@ pub fn vault_create(state: State<'_, AppState>, path: String, password: String) 
         return Err(ApiError::new("vault_exists", "Close the active vault or choose a new path"));
     }
 
-    let store = VaultStore::create()?;
+    let store = VaultStore::create_named(&name)?;
     VaultFile::save(&path, &store, password.as_bytes())?;
     let store = VaultFile::load(&path, password.as_bytes())?;
     *guard = Some(ActiveSession { path, store, dirty: false });

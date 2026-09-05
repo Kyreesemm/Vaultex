@@ -8,6 +8,7 @@ const unlockError = document.querySelector('#unlockError');
 const vaultPath = document.querySelector('#vaultPath');
 const masterPassword = document.querySelector('#masterPassword');
 const createVaultPath = document.querySelector('#createVaultPath');
+const createVaultName = document.querySelector('#createVaultName');
 const createMasterPassword = document.querySelector('#createMasterPassword');
 const openVaultButton = document.querySelector('#openVaultButton');
 const newVaultButton = document.querySelector('#newVaultButton');
@@ -67,16 +68,18 @@ async function unlockVault(command) {
   const creating = command === 'vault_create';
   const path = (creating ? createVaultPath : vaultPath).value.trim();
   const password = (creating ? createMasterPassword : masterPassword).value;
-  if (!path || !password) {
-    showUnlockError('Укажите путь к хранилищу и мастер-пароль.');
+  const name = creating ? createVaultName.value.trim() : '';
+  if (!path || !password || (creating && !name)) {
+    showUnlockError(creating ? 'Укажите путь, название и мастер-пароль.' : 'Укажите путь к хранилищу и мастер-пароль.');
     return;
   }
   openVaultButton.disabled = true;
   createVaultButton.disabled = true;
   try {
-    await invoke(command, { path, password });
+    await invoke(command, { path, name, password });
     masterPassword.value = '';
     createMasterPassword.value = '';
+    createVaultName.value = '';
     setLocked(false);
     showToast(command === 'vault_create' ? 'Хранилище создано' : 'Хранилище разблокировано');
   } catch (error) {

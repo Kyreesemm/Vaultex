@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added encrypted vault display names stored inside the authenticated manifest.
+- Added vault-name input to the new-vault creation flow.
+- Added storage format version 3 for the encrypted manifest name field.
 - Added separate unlock and new-vault creation screens with mobile-friendly navigation between them.
 - Added the first functional unlock screen with master-password and vault-path inputs.
 - Added frontend integration for opening, creating, locking, and checking the active vault session through Rust IPC.
@@ -47,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a fallback application icon for Tauri builds.
 
 ### Changed
+- Removed the decorative background highlight so the main interface and topbar use a uniform deep graphite background.
 - Darkened the global interface palette to deep graphite-grey backgrounds.
 - Made the unlock screen fully opaque so protected content cannot show through it.
 - Switched the bundle identifier to a desktop-specific reverse-DNS identifier.

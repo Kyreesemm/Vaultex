@@ -10,9 +10,10 @@ use crate::vault::{
 
 const MAGIC: &[u8; 8] = b"VAULTEX\0";
 const RECORD_MAGIC: &[u8; 4] = b"VRB1";
-const FORMAT_VERSION: u16 = 2;
+const FORMAT_VERSION: u16 = 3;
 const MAX_RECORDS: usize = 1_000_000;
 const MAX_BLOCK_SIZE: usize = 256 * 1024 * 1024;
+const MAX_VAULT_NAME_LENGTH: usize = 256;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct RecordId([u8; 16]);
@@ -80,6 +81,7 @@ pub struct VaultRecord {
 }
 
 pub struct VaultStore {
+    name: String,
     vault_id: [u8; 16],
     data_key: VaultKey,
     wrapped_key: Option<KeyEnvelope>,
@@ -90,12 +92,18 @@ pub struct VaultStore {
 
 impl VaultStore {
     pub fn create() -> Result<Self, VaultError> {
+        Self::create_named("Unnamed vault")
+    }
+
+    pub fn create_named(name: &str) -> Result<Self, VaultError> {
+        validate_vault_name(name)?;
         let mut vault_id = [0u8; 16];
         let mut salt = [0u8; SALT_LENGTH];
         OsRng.try_fill_bytes(&mut vault_id).map_err(|_| VaultError::Randomness)?;
         OsRng.try_fill_bytes(&mut salt).map_err(|_| VaultError::Randomness)?;
 
         Ok(Self {
+            name: name.to_owned(),
             vault_id,
             data_key: VaultKey::generate()?,
             wrapped_key: None,
@@ -151,7 +159,7 @@ impl VaultStore {
             &KeyEnvelope { nonce: manifest_nonce, ciphertext: manifest_ciphertext },
             &manifest_aad(&vault_id),
         )?;
-        let entries = parse_manifest(&manifest)?;
+        let (name, entries) = parse_manifest(&manifest)?;
 
         let mut blocks = Vec::new();
         while reader.remaining() > 0 {
@@ -173,6 +181,7 @@ impl VaultStore {
         }
 
         Ok(Self {
+            name,
             vault_id,
             data_key,
             wrapped_key: Some(KeyEnvelope { nonce: wrapped_nonce, ciphertext: wrapped_ciphertext }),
@@ -200,6 +209,10 @@ impl VaultStore {
 
     pub fn get(&self, id: RecordId) -> Option<&VaultRecord> {
         self.records.get(&id)
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn list(&self) -> impl Iterator<Item = (RecordId, &VaultRecord)> {
@@ -251,6 +264,7 @@ impl VaultStore {
         let mut blocks = Vec::with_capacity(self.records.len());
         let mut manifest = Writer::new();
         manifest.u16(FORMAT_VERSION);
+        manifest.string(&self.name, MAX_VAULT_NAME_LENGTH)?;
         manifest.u32(self.records.len() as u32);
 
         for (block_index, (id, record)) in self.records.iter().enumerate() {
@@ -331,11 +345,13 @@ fn aad(domain: &[u8], vault_id: &[u8; 16], version: u16) -> Vec<u8> {
     result
 }
 
-fn parse_manifest(bytes: &[u8]) -> Result<Vec<(RecordId, RecordKind, u64, usize)>, VaultError> {
+fn parse_manifest(bytes: &[u8]) -> Result<(String, Vec<(RecordId, RecordKind, u64, usize)>), VaultError> {
     let mut reader = Reader::new(bytes);
     if reader.u16()? != FORMAT_VERSION {
         return Err(VaultError::InvalidEnvelope);
     }
+    let name = reader.string(MAX_VAULT_NAME_LENGTH)?;
+    validate_vault_name(&name)?;
     let count = reader.u32()? as usize;
     if count > MAX_RECORDS {
         return Err(VaultError::InvalidEnvelope);
@@ -351,7 +367,14 @@ fn parse_manifest(bytes: &[u8]) -> Result<Vec<(RecordId, RecordKind, u64, usize)
     if reader.remaining() != 0 {
         return Err(VaultError::InvalidEnvelope);
     }
-    Ok(entries)
+    Ok((name, entries))
+}
+
+fn validate_vault_name(name: &str) -> Result<(), VaultError> {
+    if name.trim().is_empty() || name.len() > MAX_VAULT_NAME_LENGTH || name.contains(['/', '\\', '\0']) {
+        return Err(VaultError::InvalidEnvelope);
+    }
+    Ok(())
 }
 
 struct Writer {
@@ -369,6 +392,14 @@ impl Writer {
         if value.len() > MAX_BLOCK_SIZE { return Err(VaultError::InvalidEnvelope); }
         self.u32(value.len() as u32);
         self.bytes.extend_from_slice(value);
+        Ok(())
+    }
+    fn string(&mut self, value: &str, maximum: usize) -> Result<(), VaultError> {
+        if value.len() > maximum || value.len() > u16::MAX as usize {
+            return Err(VaultError::InvalidEnvelope);
+        }
+        self.u16(value.len() as u16);
+        self.bytes.extend_from_slice(value.as_bytes());
         Ok(())
     }
     fn finish(self) -> Vec<u8> { self.bytes }
@@ -409,6 +440,13 @@ impl<'a> Reader<'a> {
         if length > maximum { return Err(VaultError::InvalidEnvelope); }
         Ok(self.take(length)?.to_vec())
     }
+    fn string(&mut self, maximum: usize) -> Result<String, VaultError> {
+        let length = self.u16()? as usize;
+        if length > maximum {
+            return Err(VaultError::InvalidEnvelope);
+        }
+        String::from_utf8(self.take(length)?.to_vec()).map_err(|_| VaultError::InvalidEnvelope)
+    }
     fn remaining(&self) -> usize { self.bytes.len() - self.offset }
 }
 
@@ -428,6 +466,20 @@ mod tests {
         let restored = VaultStore::unlock(&bytes, PASSWORD).unwrap();
         assert_eq!(&*restored.get(note_id).unwrap().payload, b"private note");
         assert_eq!(restored.get(secret_id).unwrap().kind, RecordKind::Secret);
+    }
+
+    #[test]
+    fn named_store_round_trip_preserves_display_name() {
+        let store = VaultStore::create_named("Personal secrets").unwrap();
+        let restored = VaultStore::unlock(&store.commit(PASSWORD).unwrap(), PASSWORD).unwrap();
+        assert_eq!(restored.name(), "Personal secrets");
+    }
+
+    #[test]
+    fn invalid_vault_names_are_rejected() {
+        assert!(VaultStore::create_named("").is_err());
+        assert!(VaultStore::create_named("folder/name").is_err());
+        assert!(VaultStore::create_named("   ").is_err());
     }
 
     #[test]
