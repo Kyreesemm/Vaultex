@@ -101,9 +101,24 @@ function updateVaultCatalog(catalog) {
   const directory = catalog.directories[0] || '';
   vaultDirectory.value = directory;
   createVaultDirectory.value = directory;
-  vaultSelect.replaceChildren(new Option(catalog.vaults.length ? 'Выберите хранилище' : 'Хранилища не найдены', ''));
+  vaultSelect.replaceChildren();
+  if (!catalog.vaults.length) vaultSelect.add(new Option('Хранилища не найдены', ''));
   catalog.vaults.forEach(vault => vaultSelect.add(new Option(vault.name, vault.path)));
-  if (catalog.last_vault && catalog.vaults.some(vault => vault.path === catalog.last_vault)) vaultSelect.value = catalog.last_vault;
+  if (catalog.last_vault && catalog.vaults.some(vault => vault.path === catalog.last_vault)) {
+    vaultSelect.value = catalog.last_vault;
+  } else if (catalog.vaults.length) {
+    vaultSelect.value = catalog.vaults[0].path;
+  }
+}
+
+let catalogTimer;
+function refreshCatalog() {
+  clearTimeout(catalogTimer);
+  catalogTimer = setTimeout(() => {
+    invoke('vault_catalog', { directory: vaultDirectory.value.trim() || null })
+      .then(updateVaultCatalog)
+      .catch(() => {});
+  }, 250);
 }
 
 document.querySelector('#lockButton').addEventListener('click', async () => {
@@ -121,6 +136,7 @@ document.querySelector('#lockButton').addEventListener('click', async () => {
 });
 
 openVaultButton.addEventListener('click', () => unlockVault('vault_open'));
+vaultDirectory.addEventListener('input', refreshCatalog);
 newVaultButton.addEventListener('click', () => setUnlockMode('create'));
 createVaultButton.addEventListener('click', () => unlockVault('vault_create'));
 backToOpenButton.addEventListener('click', () => setUnlockMode('open'));

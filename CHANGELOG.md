@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added dynamic vault-directory scanning when the unlock screen path changes.
 - Added encrypted vault display names stored inside the authenticated manifest.
 - Added platform-aware vault directory discovery and a remembered last-vault selection.
 - Added a local configuration for non-secret vault paths and display-name metadata.
@@ -52,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a fallback application icon for Tauri builds.
 
 ### Changed
+- Styled the vault selector to match the dark input fields and fixed its height.
+- Automatically selects the first discovered vault when no remembered selection is available.
 - Removed the decorative background highlight so the main interface and topbar use a uniform deep graphite background.
 - Darkened the global interface palette to deep graphite-grey backgrounds.
 - Made the unlock screen fully opaque so protected content cannot show through it.

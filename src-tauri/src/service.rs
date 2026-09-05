@@ -169,12 +169,20 @@ pub fn vault_open(state: State<'_, AppState>, path: String, password: String) ->
 }
 
 #[tauri::command]
-pub fn vault_catalog() -> Result<VaultCatalogDto, ApiError> {
+pub fn vault_catalog(directory: Option<String>) -> Result<VaultCatalogDto, ApiError> {
     let mut app_config = config::load();
     if let Some(directory) = config::default_vault_directory() {
         fs::create_dir_all(&directory).map_err(|_| ApiError::new("storage_io", "Unable to prepare the default vault directory"))?;
         if !app_config.vault_directories.contains(&directory) {
             app_config.vault_directories.insert(0, directory);
+        }
+    }
+    if let Some(directory) = directory.filter(|value| !value.trim().is_empty()) {
+        let path = PathBuf::from(directory);
+        if path.is_dir() {
+            let path = config::normalize_directory(&path);
+            app_config.vault_directories.retain(|candidate| candidate != &path);
+            app_config.vault_directories.insert(0, path);
         }
     }
     let directories = app_config.vault_directories.iter().filter(|path| path.is_dir()).cloned().collect::<Vec<_>>();
