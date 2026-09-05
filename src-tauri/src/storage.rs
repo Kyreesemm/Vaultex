@@ -10,7 +10,7 @@ use crate::vault::{
 
 const MAGIC: &[u8; 8] = b"VAULTEX\0";
 const RECORD_MAGIC: &[u8; 4] = b"VRB1";
-const FORMAT_VERSION: u16 = 1;
+const FORMAT_VERSION: u16 = 2;
 const MAX_RECORDS: usize = 1_000_000;
 const MAX_BLOCK_SIZE: usize = 256 * 1024 * 1024;
 
@@ -108,7 +108,7 @@ impl VaultStore {
         let data_key_bytes = VaultCrypto::decrypt_with_key(
             &password_key,
             &KeyEnvelope { nonce: wrapped_nonce, ciphertext: wrapped_ciphertext.clone() },
-            &wrap_aad(&vault_id),
+            &header_aad(&vault_id, &salt, kdf_params),
         )?;
         if data_key_bytes.len() != KEY_LENGTH {
             return Err(VaultError::InvalidEnvelope);
@@ -194,7 +194,7 @@ impl VaultStore {
         let wrapped_key = VaultCrypto::encrypt_with_key(
             &password_key,
             self.data_key.as_bytes(),
-            &wrap_aad(&self.vault_id),
+            &header_aad(&self.vault_id, &self.salt, self.kdf_params),
         )?;
         self.commit_with_wrapped_key(&wrapped_key)
     }
@@ -265,27 +265,37 @@ impl VaultStore {
     }
 }
 
-fn wrap_aad(vault_id: &[u8; 16]) -> Vec<u8> {
-    aad(b"wrap", vault_id)
+fn header_aad(vault_id: &[u8; 16], salt: &[u8; SALT_LENGTH], params: KdfParams) -> Vec<u8> {
+    let mut result = Vec::with_capacity(8 + 2 + 4 + 4 + 4 + 2 + 16 + SALT_LENGTH);
+    result.extend_from_slice(MAGIC);
+    result.extend_from_slice(&FORMAT_VERSION.to_le_bytes());
+    result.extend_from_slice(&params.memory_kib.to_le_bytes());
+    result.extend_from_slice(&params.iterations.to_le_bytes());
+    result.extend_from_slice(&params.parallelism.to_le_bytes());
+    result.extend_from_slice(&(params.output_length as u16).to_le_bytes());
+    result.extend_from_slice(vault_id);
+    result.extend_from_slice(salt);
+    result
 }
 
 fn manifest_aad(vault_id: &[u8; 16]) -> Vec<u8> {
-    aad(b"manifest", vault_id)
+    aad(b"manifest", vault_id, FORMAT_VERSION)
 }
 
 fn record_aad(vault_id: &[u8; 16], id: RecordId, kind: RecordKind, revision: u64) -> Vec<u8> {
-    let mut result = aad(b"record", vault_id);
+    let mut result = aad(b"record", vault_id, FORMAT_VERSION);
     result.extend_from_slice(&id.0);
     result.push(kind as u8);
     result.extend_from_slice(&revision.to_le_bytes());
     result
 }
 
-fn aad(domain: &[u8], vault_id: &[u8; 16]) -> Vec<u8> {
-    let mut result = Vec::with_capacity(domain.len() + vault_id.len() + 1);
+fn aad(domain: &[u8], vault_id: &[u8; 16], version: u16) -> Vec<u8> {
+    let mut result = Vec::with_capacity(domain.len() + vault_id.len() + 3);
     result.extend_from_slice(b"vaultex-storage-v1\0");
     result.extend_from_slice(domain);
     result.push(0);
+    result.extend_from_slice(&version.to_le_bytes());
     result.extend_from_slice(vault_id);
     result
 }
@@ -407,6 +417,26 @@ mod tests {
         *bytes.last_mut().unwrap() ^= 1;
         assert!(matches!(
             VaultStore::unlock(&bytes, PASSWORD),
+            Err(VaultError::Decryption)
+        ));
+    }
+
+    #[test]
+    fn tampered_header_is_rejected_before_manifest_decryption() {
+        let store = VaultStore::create().unwrap();
+        let bytes = store.commit(PASSWORD).unwrap();
+
+        let mut changed_kdf = bytes.clone();
+        changed_kdf[10] ^= 1;
+        assert!(matches!(
+            VaultStore::unlock(&changed_kdf, PASSWORD),
+            Err(VaultError::Decryption)
+        ));
+
+        let mut changed_vault_id = bytes;
+        changed_vault_id[24] ^= 1;
+        assert!(matches!(
+            VaultStore::unlock(&changed_vault_id, PASSWORD),
             Err(VaultError::Decryption)
         ));
     }
