@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added encrypted vault display names stored inside the authenticated manifest.
+- Added platform-aware vault directory discovery and a remembered last-vault selection.
+- Added a local configuration for non-secret vault paths and display-name metadata.
 - Added vault-name input to the new-vault creation flow.
 - Added storage format version 3 for the encrypted manifest name field.
 - Added separate unlock and new-vault creation screens with mobile-friendly navigation between them.

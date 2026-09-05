@@ -15,8 +15,9 @@
       <p class="unlock-kicker">Приватное хранилище</p>
       <div class="unlock-view" id="openView">
         <h1>Открыть хранилище</h1>
-        <p class="unlock-description">Выберите файл и введите мастер-пароль. Данные будут доступны только в памяти текущей сессии.</p>
-        <label class="unlock-field"><span>Файл хранилища</span><input id="vaultPath" type="text" placeholder="/home/user/Documents/personal.vault" autocomplete="off" /></label>
+        <p class="unlock-description">Выберите каталог и конкретное хранилище. Данные будут доступны только в памяти текущей сессии.</p>
+        <label class="unlock-field"><span>Папка хранилищ</span><input id="vaultDirectory" type="text" placeholder="/home/user/.local/share/Vaultex/Vaults" autocomplete="off" /></label>
+        <label class="unlock-field"><span>Хранилище</span><select id="vaultSelect"><option value="">Загрузка списка…</option></select></label>
         <label class="unlock-field"><span>Мастер-пароль</span><input id="masterPassword" type="password" placeholder="Введите мастер-пароль" autocomplete="current-password" /></label>
         <div class="unlock-actions"><button class="primary-button" id="openVaultButton"><span class="material-symbols-rounded">lock_open</span><span>Разблокировать</span></button><button class="secondary-button" id="newVaultButton"><span class="material-symbols-rounded">add_circle</span><span>Новое хранилище</span></button></div>
       </div>
@@ -24,7 +25,7 @@
         <button class="back-button" id="backToOpenButton"><span class="material-symbols-rounded">arrow_back</span>Назад к открытию</button>
         <h1>Создать хранилище</h1>
         <p class="unlock-description">Будет создан новый защищённый файл Vaultex с уникальным ключом шифрования.</p>
-        <label class="unlock-field"><span>Путь нового файла</span><input id="createVaultPath" type="text" placeholder="/home/user/Documents/personal.vault" autocomplete="off" /></label>
+        <label class="unlock-field"><span>Папка хранилищ</span><input id="createVaultDirectory" type="text" placeholder="/home/user/.local/share/Vaultex/Vaults" autocomplete="off" /></label>
         <label class="unlock-field"><span>Название хранилища</span><input id="createVaultName" type="text" placeholder="Личное хранилище" maxlength="256" autocomplete="off" /></label>
         <label class="unlock-field"><span>Новый мастер-пароль</span><input id="createMasterPassword" type="password" placeholder="Придумайте мастер-пароль" autocomplete="new-password" /></label>
         <div class="unlock-actions single"><button class="primary-button" id="createVaultButton"><span class="material-symbols-rounded">add_circle</span><span>Создать и открыть</span></button></div>

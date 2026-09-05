@@ -41,7 +41,7 @@
 
 body{
   margin:0;
-  background:radial-gradient(circle at 85% -10%,#202329 0,transparent 32%),var(--bg);
+  background:var(--bg);
   color:var(--text);
   font:400 15px Roboto,Arial,sans-serif;
   min-height:100vh
@@ -65,12 +65,12 @@ body{
   display:flex;
   align-items:center;
   gap:17px;
-  background:rgba(23,25,28,.82);
+  background:var(--bg);
   border-bottom:1px solid var(--line);
   position:sticky;
   top:0;
   z-index:10;
-  backdrop-filter:blur(18px)
+  backdrop-filter:none
 }
 
 .brand{
@@ -816,7 +816,7 @@ body{
   display:grid;
   place-items:center;
   padding:24px;
-  background:radial-gradient(circle at 50% 0%,rgba(169,139,245,.1),transparent 42%),#0d0f11;
+  background:#0d0f11;
 }
 
 .unlock-screen[hidden]{
@@ -912,6 +912,22 @@ body{
   font:inherit;
 }
 
+.unlock-field select{
+  width:100%;
+  padding:12px 13px;
+  color:var(--text);
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:10px;
+  outline:none;
+  font:inherit;
+}
+
+.unlock-field select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(169,139,245,.12);
+}
+
 .unlock-field input:focus{
   border-color:var(--accent);
   box-shadow:0 0 0 3px rgba(169,139,245,.12);
@@ -930,6 +946,10 @@ body{
 
 .unlock-actions.single{
   display:block;
+}
+
+.unlock-actions.single button{
+  width:100%;
 }
 
 .secondary-button{

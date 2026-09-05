@@ -5,9 +5,10 @@ const toast = document.querySelector('#toast');
 const toastText = document.querySelector('#toastText');
 const unlockScreen = document.querySelector('#unlockScreen');
 const unlockError = document.querySelector('#unlockError');
-const vaultPath = document.querySelector('#vaultPath');
+const vaultDirectory = document.querySelector('#vaultDirectory');
+const vaultSelect = document.querySelector('#vaultSelect');
 const masterPassword = document.querySelector('#masterPassword');
-const createVaultPath = document.querySelector('#createVaultPath');
+const createVaultDirectory = document.querySelector('#createVaultDirectory');
 const createVaultName = document.querySelector('#createVaultName');
 const createMasterPassword = document.querySelector('#createMasterPassword');
 const openVaultButton = document.querySelector('#openVaultButton');
@@ -60,23 +61,24 @@ function setUnlockMode(mode) {
   openView.hidden = creating;
   createView.hidden = !creating;
   showUnlockError('');
-  (creating ? createVaultPath : vaultPath).focus();
+  (creating ? createVaultDirectory : vaultDirectory).focus();
 }
 
 async function unlockVault(command) {
   showUnlockError('');
   const creating = command === 'vault_create';
-  const path = (creating ? createVaultPath : vaultPath).value.trim();
+  const directory = (creating ? createVaultDirectory : vaultDirectory).value.trim();
+  const path = creating ? directory : vaultSelect.value;
   const password = (creating ? createMasterPassword : masterPassword).value;
   const name = creating ? createVaultName.value.trim() : '';
-  if (!path || !password || (creating && !name)) {
-    showUnlockError(creating ? 'Укажите путь, название и мастер-пароль.' : 'Укажите путь к хранилищу и мастер-пароль.');
+  if (!directory || !path || !password || (creating && !name)) {
+    showUnlockError(creating ? 'Укажите папку, название и мастер-пароль.' : 'Выберите папку, хранилище и введите мастер-пароль.');
     return;
   }
   openVaultButton.disabled = true;
   createVaultButton.disabled = true;
   try {
-    await invoke(command, { path, name, password });
+    await invoke(command, creating ? { directory, name, password } : { path, password });
     masterPassword.value = '';
     createMasterPassword.value = '';
     createVaultName.value = '';
@@ -88,6 +90,20 @@ async function unlockVault(command) {
     openVaultButton.disabled = false;
     createVaultButton.disabled = false;
   }
+}
+
+function updateVaultCatalog(catalog) {
+  if (catalog.android) {
+    document.querySelectorAll('.unlock-field').forEach(field => {
+      if (field.querySelector('#vaultDirectory, #createVaultDirectory')) field.hidden = true;
+    });
+  }
+  const directory = catalog.directories[0] || '';
+  vaultDirectory.value = directory;
+  createVaultDirectory.value = directory;
+  vaultSelect.replaceChildren(new Option(catalog.vaults.length ? 'Выберите хранилище' : 'Хранилища не найдены', ''));
+  catalog.vaults.forEach(vault => vaultSelect.add(new Option(vault.name, vault.path)));
+  if (catalog.last_vault && catalog.vaults.some(vault => vault.path === catalog.last_vault)) vaultSelect.value = catalog.last_vault;
 }
 
 document.querySelector('#lockButton').addEventListener('click', async () => {
@@ -116,6 +132,7 @@ createMasterPassword.addEventListener('keydown', event => {
 });
 
 if (tauriInvoke) {
+  invoke('vault_catalog').then(updateVaultCatalog).catch(() => {});
   invoke('vault_status')
     .then(status => setLocked(status.locked))
     .catch(() => setLocked(true));

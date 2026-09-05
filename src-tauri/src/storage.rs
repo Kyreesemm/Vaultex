@@ -215,6 +215,10 @@ impl VaultStore {
         &self.name
     }
 
+    pub fn vault_id_hex(&self) -> String {
+        self.vault_id.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
     pub fn list(&self) -> impl Iterator<Item = (RecordId, &VaultRecord)> {
         self.records.iter().map(|(id, record)| (*id, record))
     }

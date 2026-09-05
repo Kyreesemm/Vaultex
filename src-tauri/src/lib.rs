@@ -4,6 +4,7 @@ pub mod vault;
 pub mod storage;
 pub mod persistence;
 pub mod service;
+pub mod config;
 
 #[cfg(target_os = "linux")]
 fn configure_linux_graphics() {
@@ -41,6 +42,7 @@ pub fn run() {
             service::vault_status,
             service::vault_create,
             service::vault_open,
+            service::vault_catalog,
             service::vault_lock,
             service::vault_save,
             service::record_list,

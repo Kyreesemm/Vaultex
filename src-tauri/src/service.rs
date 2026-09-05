@@ -1,10 +1,11 @@
-use std::{path::PathBuf, sync::Mutex};
+use std::{fs, path::{Path, PathBuf}, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use zeroize::Zeroizing;
 
 use crate::{
+    config,
     persistence::{PersistenceError, VaultFile},
     storage::{RecordId, RecordKind, VaultStore},
     vault::VaultError,
@@ -77,6 +78,20 @@ pub struct VaultStatusDto {
 }
 
 #[derive(Debug, Serialize)]
+pub struct VaultCatalogDto {
+    pub directories: Vec<String>,
+    pub vaults: Vec<VaultChoiceDto>,
+    pub last_vault: Option<String>,
+    pub android: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct VaultChoiceDto {
+    pub path: String,
+    pub name: String,
+}
+
+#[derive(Debug, Serialize)]
 pub struct RecordSummaryDto {
     pub id: String,
     pub kind: &'static str,
@@ -120,8 +135,10 @@ pub fn vault_status(state: State<'_, AppState>) -> Result<VaultStatusDto, ApiErr
 }
 
 #[tauri::command]
-pub fn vault_create(state: State<'_, AppState>, path: String, name: String, password: String) -> Result<(), ApiError> {
-    let path = validate_path(path)?;
+pub fn vault_create(state: State<'_, AppState>, directory: String, name: String, password: String) -> Result<(), ApiError> {
+    let directory = validate_directory(directory)?;
+    let filename = format!("vault-{}.vault", RecordId::generate()?.to_hex());
+    let path = directory.join(filename);
     let password = Zeroizing::new(password);
     let mut guard = state.session.lock().map_err(|_| ApiError::new("state_error", "Application state is unavailable"))?;
     if guard.is_some() || path.exists() {
@@ -131,7 +148,8 @@ pub fn vault_create(state: State<'_, AppState>, path: String, name: String, pass
     let store = VaultStore::create_named(&name)?;
     VaultFile::save(&path, &store, password.as_bytes())?;
     let store = VaultFile::load(&path, password.as_bytes())?;
-    *guard = Some(ActiveSession { path, store, dirty: false });
+    *guard = Some(ActiveSession { path: path.clone(), store, dirty: false });
+    remember_vault(&path, &name)?;
     Ok(())
 }
 
@@ -144,8 +162,40 @@ pub fn vault_open(state: State<'_, AppState>, path: String, password: String) ->
     if guard.is_some() {
         return Err(ApiError::new("vault_already_open", "Close the active vault first"));
     }
-    *guard = Some(ActiveSession { path, store, dirty: false });
+    let name = store.name().to_owned();
+    *guard = Some(ActiveSession { path: path.clone(), store, dirty: false });
+    remember_vault(&path, &name)?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn vault_catalog() -> Result<VaultCatalogDto, ApiError> {
+    let mut app_config = config::load();
+    if let Some(directory) = config::default_vault_directory() {
+        fs::create_dir_all(&directory).map_err(|_| ApiError::new("storage_io", "Unable to prepare the default vault directory"))?;
+        if !app_config.vault_directories.contains(&directory) {
+            app_config.vault_directories.insert(0, directory);
+        }
+    }
+    let directories = app_config.vault_directories.iter().filter(|path| path.is_dir()).cloned().collect::<Vec<_>>();
+    let mut vaults = Vec::new();
+    for directory in &directories {
+        let entries = fs::read_dir(directory).map_err(|_| ApiError::new("storage_io", "Unable to read vault directory"))?;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().is_some_and(|extension| extension == "vault") && path.is_file() {
+                let name = app_config.vault_names.get(&path).cloned().unwrap_or_else(|| "Unnamed vault".to_owned());
+                vaults.push(VaultChoiceDto { path: path.to_string_lossy().into_owned(), name });
+            }
+        }
+    }
+    let _ = config::save(&app_config);
+    Ok(VaultCatalogDto {
+        directories: directories.into_iter().map(|path| path.to_string_lossy().into_owned()).collect(),
+        vaults,
+        last_vault: app_config.last_vault.map(|path| path.to_string_lossy().into_owned()),
+        android: cfg!(target_os = "android"),
+    })
 }
 
 #[tauri::command]
@@ -216,15 +266,31 @@ pub fn record_delete(state: State<'_, AppState>, id: String) -> Result<(), ApiEr
     Ok(())
 }
 
-fn validate_path(value: String) -> Result<PathBuf, ApiError> {
+fn validate_directory(value: String) -> Result<PathBuf, ApiError> {
     if value.trim().is_empty() {
         return Err(ApiError::invalid_request());
     }
     let path = PathBuf::from(value);
-    if path.is_dir() || path.parent().is_some_and(|parent| !parent.exists()) {
-        return Err(ApiError::new("invalid_path", "The vault path is not usable"));
-    }
+    if path.exists() && !path.is_dir() { return Err(ApiError::new("invalid_path", "The vault directory is not usable")); }
+    fs::create_dir_all(&path).map_err(|_| ApiError::new("invalid_path", "The vault directory is not usable"))?;
+    Ok(config::normalize_directory(&path))
+}
+
+fn validate_path(value: String) -> Result<PathBuf, ApiError> {
+    let path = PathBuf::from(value);
+    if !path.is_file() { return Err(ApiError::new("invalid_path", "The vault file is not usable")); }
     Ok(path)
+}
+
+fn remember_vault(path: &Path, name: &str) -> Result<(), ApiError> {
+    let mut app_config = config::load();
+    let directory = path.parent().ok_or_else(ApiError::invalid_request)?;
+    let directory = config::normalize_directory(directory);
+    app_config.vault_directories.retain(|candidate| candidate != &directory);
+    app_config.vault_directories.insert(0, directory);
+    app_config.vault_names.insert(path.to_path_buf(), name.to_owned());
+    app_config.last_vault = Some(path.to_path_buf());
+    config::save(&app_config).map_err(|_| ApiError::new("config_error", "Unable to save vault preferences"))
 }
 
 fn parse_id(value: &str) -> Result<RecordId, ApiError> {
