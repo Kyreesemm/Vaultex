@@ -25,10 +25,10 @@
 }
 
 :root{
-  --bg:#17191c;
-  --panel:#202327;
-  --panel2:#25282d;
-  --line:#34383f;
+  --bg:#0d0f11;
+  --panel:#14171a;
+  --panel2:#1a1d21;
+  --line:#292d32;
   --text:#f5f6f7;
   --muted:#969ca5;
   --accent:#a98bf5;
@@ -41,7 +41,7 @@
 
 body{
   margin:0;
-  background:radial-gradient(circle at 85% -10%,#303039 0,transparent 32%),var(--bg);
+  background:radial-gradient(circle at 85% -10%,#202329 0,transparent 32%),var(--bg);
   color:var(--text);
   font:400 15px Roboto,Arial,sans-serif;
   min-height:100vh
@@ -816,7 +816,7 @@ body{
   display:grid;
   place-items:center;
   padding:24px;
-  background:radial-gradient(circle at 50% 0%,rgba(169,139,245,.12),transparent 42%),rgba(23,25,28,.98);
+  background:radial-gradient(circle at 50% 0%,rgba(169,139,245,.1),transparent 42%),#0d0f11;
 }
 
 .unlock-screen[hidden]{
@@ -858,6 +858,27 @@ body{
 .unlock-card h1{
   margin:0 0 10px;
   font-size:24px;
+}
+
+.unlock-view[hidden]{
+  display:none;
+}
+
+.back-button{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:0 0 20px;
+  padding:0;
+  color:var(--muted);
+  background:transparent;
+  border:0;
+  font:400 13px Roboto;
+  cursor:pointer;
+}
+
+.back-button:hover{
+  color:var(--text);
 }
 
 .unlock-description{
@@ -905,6 +926,10 @@ body{
 .unlock-actions button{
   flex:1;
   justify-content:center;
+}
+
+.unlock-actions.single{
+  display:block;
 }
 
 .secondary-button{

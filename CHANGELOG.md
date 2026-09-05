@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added separate unlock and new-vault creation screens with mobile-friendly navigation between them.
 - Added the first functional unlock screen with master-password and vault-path inputs.
 - Added frontend integration for opening, creating, locking, and checking the active vault session through Rust IPC.
 - Added a mobile-friendly unlock layout that keeps vault content unavailable until the session is unlocked.
@@ -46,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a fallback application icon for Tauri builds.
 
 ### Changed
+- Darkened the global interface palette to deep graphite-grey backgrounds.
+- Made the unlock screen fully opaque so protected content cannot show through it.
+- Switched the bundle identifier to a desktop-specific reverse-DNS identifier.
 - Reused the visual direction and typography approach from the existing WebFlow Runtime interface example.
 - Moved frontend font assets into `webui/fonts` so the application does not depend on ignored `no-public` materials.
 - Configured Tauri to load the static interface directly from the `webui` directory without requiring a separate development HTTP server.
@@ -54,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configured Linux Wayland sessions to use the Plasma-compatible XWayland path by default.
 
 ### Fixed
+- Fixed Linux AppImage bundling by providing a square PNG application icon.
 - Fixed production UI loading by enabling the Tauri frontend bridge and using the bundled `webui` assets for release builds.
 - Added a Linux Wayland/WebKitGTK graphics workaround for the DMA-BUF and NVIDIA explicit synchronization startup issue.
 - Removed the static UI's dependency on an unavailable `localhost:1420` development server that could result in an HTTP 404 page.

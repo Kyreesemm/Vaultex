@@ -7,8 +7,14 @@ const unlockScreen = document.querySelector('#unlockScreen');
 const unlockError = document.querySelector('#unlockError');
 const vaultPath = document.querySelector('#vaultPath');
 const masterPassword = document.querySelector('#masterPassword');
+const createVaultPath = document.querySelector('#createVaultPath');
+const createMasterPassword = document.querySelector('#createMasterPassword');
 const openVaultButton = document.querySelector('#openVaultButton');
+const newVaultButton = document.querySelector('#newVaultButton');
 const createVaultButton = document.querySelector('#createVaultButton');
+const backToOpenButton = document.querySelector('#backToOpenButton');
+const openView = document.querySelector('#openView');
+const createView = document.querySelector('#createView');
 const tauriInvoke = window.__TAURI__?.core?.invoke;
 
 function openDrawer() { drawer.classList.add('open'); scrim.classList.add('open'); }
@@ -48,10 +54,19 @@ function showUnlockError(message) {
   unlockError.textContent = message;
 }
 
+function setUnlockMode(mode) {
+  const creating = mode === 'create';
+  openView.hidden = creating;
+  createView.hidden = !creating;
+  showUnlockError('');
+  (creating ? createVaultPath : vaultPath).focus();
+}
+
 async function unlockVault(command) {
   showUnlockError('');
-  const path = vaultPath.value.trim();
-  const password = masterPassword.value;
+  const creating = command === 'vault_create';
+  const path = (creating ? createVaultPath : vaultPath).value.trim();
+  const password = (creating ? createMasterPassword : masterPassword).value;
   if (!path || !password) {
     showUnlockError('Укажите путь к хранилищу и мастер-пароль.');
     return;
@@ -61,6 +76,7 @@ async function unlockVault(command) {
   try {
     await invoke(command, { path, password });
     masterPassword.value = '';
+    createMasterPassword.value = '';
     setLocked(false);
     showToast(command === 'vault_create' ? 'Хранилище создано' : 'Хранилище разблокировано');
   } catch (error) {
@@ -86,9 +102,14 @@ document.querySelector('#lockButton').addEventListener('click', async () => {
 });
 
 openVaultButton.addEventListener('click', () => unlockVault('vault_open'));
+newVaultButton.addEventListener('click', () => setUnlockMode('create'));
 createVaultButton.addEventListener('click', () => unlockVault('vault_create'));
+backToOpenButton.addEventListener('click', () => setUnlockMode('open'));
 masterPassword.addEventListener('keydown', event => {
   if (event.key === 'Enter') unlockVault('vault_open');
+});
+createMasterPassword.addEventListener('keydown', event => {
+  if (event.key === 'Enter') unlockVault('vault_create');
 });
 
 if (tauriInvoke) {

@@ -13,11 +13,21 @@
       <div class="unlock-mark"><span class="material-symbols-rounded">lock</span></div>
       <div class="brand">Vaultex</div>
       <p class="unlock-kicker">Приватное хранилище</p>
-      <h1>Разблокировать хранилище</h1>
-      <p class="unlock-description">Введите мастер-пароль. Расшифрованные данные будут доступны только в памяти текущей сессии.</p>
-      <label class="unlock-field"><span>Файл хранилища</span><input id="vaultPath" type="text" placeholder="/home/user/Documents/personal.vault" autocomplete="off" /></label>
-      <label class="unlock-field"><span>Мастер-пароль</span><input id="masterPassword" type="password" placeholder="Введите мастер-пароль" autocomplete="current-password" /></label>
-      <div class="unlock-actions"><button class="primary-button" id="openVaultButton"><span class="material-symbols-rounded">lock_open</span><span>Открыть</span></button><button class="secondary-button" id="createVaultButton"><span class="material-symbols-rounded">add_circle</span><span>Создать новое</span></button></div>
+      <div class="unlock-view" id="openView">
+        <h1>Открыть хранилище</h1>
+        <p class="unlock-description">Выберите файл и введите мастер-пароль. Данные будут доступны только в памяти текущей сессии.</p>
+        <label class="unlock-field"><span>Файл хранилища</span><input id="vaultPath" type="text" placeholder="/home/user/Documents/personal.vault" autocomplete="off" /></label>
+        <label class="unlock-field"><span>Мастер-пароль</span><input id="masterPassword" type="password" placeholder="Введите мастер-пароль" autocomplete="current-password" /></label>
+        <div class="unlock-actions"><button class="primary-button" id="openVaultButton"><span class="material-symbols-rounded">lock_open</span><span>Разблокировать</span></button><button class="secondary-button" id="newVaultButton"><span class="material-symbols-rounded">add_circle</span><span>Новое хранилище</span></button></div>
+      </div>
+      <div class="unlock-view" id="createView" hidden>
+        <button class="back-button" id="backToOpenButton"><span class="material-symbols-rounded">arrow_back</span>Назад к открытию</button>
+        <h1>Создать хранилище</h1>
+        <p class="unlock-description">Будет создан новый защищённый файл Vaultex с уникальным ключом шифрования.</p>
+        <label class="unlock-field"><span>Путь нового файла</span><input id="createVaultPath" type="text" placeholder="/home/user/Documents/personal.vault" autocomplete="off" /></label>
+        <label class="unlock-field"><span>Новый мастер-пароль</span><input id="createMasterPassword" type="password" placeholder="Придумайте мастер-пароль" autocomplete="new-password" /></label>
+        <div class="unlock-actions single"><button class="primary-button" id="createVaultButton"><span class="material-symbols-rounded">add_circle</span><span>Создать и открыть</span></button></div>
+      </div>
       <p class="unlock-error" id="unlockError" role="alert"></p>
       <p class="unlock-preview" id="previewNotice">Браузерный просмотр интерфейса. Для работы с хранилищем запустите приложение Vaultex.</p>
     </div>
