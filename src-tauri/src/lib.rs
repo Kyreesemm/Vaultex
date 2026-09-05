@@ -1,10 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde::Serialize;
-
 pub mod vault;
 pub mod storage;
 pub mod persistence;
+pub mod service;
 
 #[cfg(target_os = "linux")]
 fn configure_linux_graphics() {
@@ -30,25 +29,26 @@ fn configure_linux_graphics() {
     }
 }
 
-#[derive(Clone, Serialize)]
-struct VaultStatus {
-    locked: bool,
-    algorithm: &'static str,
-}
-
-#[tauri::command]
-fn vault_status() -> VaultStatus {
-    VaultStatus { locked: false, algorithm: "AES-256-GCM" }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
     configure_linux_graphics();
 
     tauri::Builder::default()
+        .manage(service::AppState::default())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![vault_status])
+        .invoke_handler(tauri::generate_handler![
+            service::vault_status,
+            service::vault_create,
+            service::vault_open,
+            service::vault_lock,
+            service::vault_save,
+            service::record_list,
+            service::record_read,
+            service::record_create,
+            service::record_update,
+            service::record_delete,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Vaultex");
 }

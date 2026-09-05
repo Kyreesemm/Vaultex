@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added a Rust-owned Tauri IPC service layer with one active, validated vault session.
+- Added vault create, open, lock, save, status, record listing, record reading, record creation, record updates, and record deletion commands.
+- Added structured IPC errors that avoid exposing password or decryption implementation details to the frontend.
+- Added request validation for vault paths, record identifiers, record kinds, and record payload sizes.
 - Added unlocked-session persistence so an already opened vault can be saved without re-entering the master password.
 - Added explicit `VaultStore::lock()` lifecycle operation that drops the in-memory vault session.
 - Added cross-platform `VaultFile` persistence with atomic encrypted-file replacement.

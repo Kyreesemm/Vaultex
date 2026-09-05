@@ -23,6 +23,33 @@ impl RecordId {
         OsRng.try_fill_bytes(&mut id).map_err(|_| VaultError::Randomness)?;
         Ok(Self(id))
     }
+
+    pub fn to_hex(self) -> String {
+        self.0.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
+    pub fn from_hex(value: &str) -> Result<Self, VaultError> {
+        let bytes = value.as_bytes();
+        if bytes.len() != 32 {
+            return Err(VaultError::InvalidEnvelope);
+        }
+        let mut id = [0u8; 16];
+        for (index, byte) in id.iter_mut().enumerate() {
+            let high = hex_digit(bytes[index * 2]).ok_or(VaultError::InvalidEnvelope)?;
+            let low = hex_digit(bytes[index * 2 + 1]).ok_or(VaultError::InvalidEnvelope)?;
+            *byte = (high << 4) | low;
+        }
+        Ok(Self(id))
+    }
+}
+
+fn hex_digit(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        b'A'..=b'F' => Some(value - b'A' + 10),
+        _ => None,
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -173,6 +200,10 @@ impl VaultStore {
 
     pub fn get(&self, id: RecordId) -> Option<&VaultRecord> {
         self.records.get(&id)
+    }
+
+    pub fn list(&self) -> impl Iterator<Item = (RecordId, &VaultRecord)> {
+        self.records.iter().map(|(id, record)| (*id, record))
     }
 
     pub fn update(&mut self, id: RecordId, payload: Vec<u8>) -> Result<(), VaultError> {
@@ -451,5 +482,13 @@ mod tests {
         let restored = VaultStore::unlock(&store.commit(PASSWORD).unwrap(), PASSWORD).unwrap();
         assert_eq!(&*restored.get(id).unwrap().payload, b"new");
         assert!(restored.get(removed).is_none());
+    }
+
+    #[test]
+    fn record_ids_round_trip_through_hex_without_panicking_on_invalid_input() {
+        let id = RecordId::generate().unwrap();
+        assert_eq!(RecordId::from_hex(&id.to_hex()).unwrap(), id);
+        assert!(RecordId::from_hex("яяяяяяяяяяяяяяяя").is_err());
+        assert!(RecordId::from_hex("not-a-record-id").is_err());
     }
 }
