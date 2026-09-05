@@ -8,6 +8,20 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <section class="unlock-screen" id="unlockScreen" hidden>
+    <div class="unlock-card">
+      <div class="unlock-mark"><span class="material-symbols-rounded">lock</span></div>
+      <div class="brand">Vaultex</div>
+      <p class="unlock-kicker">Приватное хранилище</p>
+      <h1>Разблокировать хранилище</h1>
+      <p class="unlock-description">Введите мастер-пароль. Расшифрованные данные будут доступны только в памяти текущей сессии.</p>
+      <label class="unlock-field"><span>Файл хранилища</span><input id="vaultPath" type="text" placeholder="/home/user/Documents/personal.vault" autocomplete="off" /></label>
+      <label class="unlock-field"><span>Мастер-пароль</span><input id="masterPassword" type="password" placeholder="Введите мастер-пароль" autocomplete="current-password" /></label>
+      <div class="unlock-actions"><button class="primary-button" id="openVaultButton"><span class="material-symbols-rounded">lock_open</span><span>Открыть</span></button><button class="secondary-button" id="createVaultButton"><span class="material-symbols-rounded">add_circle</span><span>Создать новое</span></button></div>
+      <p class="unlock-error" id="unlockError" role="alert"></p>
+      <p class="unlock-preview" id="previewNotice">Браузерный просмотр интерфейса. Для работы с хранилищем запустите приложение Vaultex.</p>
+    </div>
+  </section>
   <div class="app-shell">
     <header class="topbar">
       <button class="icon-button menu-button" id="menuButton" aria-label="Открыть меню"><span class="material-symbols-rounded">menu</span></button>

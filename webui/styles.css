@@ -809,6 +809,139 @@ body{
   font-size:18px
 }
 
+.unlock-screen{
+  position:fixed;
+  inset:0;
+  z-index:30;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:radial-gradient(circle at 50% 0%,rgba(169,139,245,.12),transparent 42%),rgba(23,25,28,.98);
+}
+
+.unlock-screen[hidden]{
+  display:none;
+}
+
+.unlock-card{
+  width:min(100%,460px);
+  padding:38px;
+  text-align:center;
+  background:linear-gradient(145deg,rgba(37,40,45,.98),rgba(28,30,34,.98));
+  border:1px solid var(--line);
+  border-radius:24px;
+  box-shadow:var(--shadow);
+}
+
+.unlock-mark{
+  width:58px;
+  height:58px;
+  margin:0 auto 22px;
+  display:grid;
+  place-items:center;
+  color:var(--accent2);
+  background:rgba(169,139,245,.12);
+  border:1px solid rgba(169,139,245,.28);
+  border-radius:18px;
+}
+
+.unlock-card .brand{
+  font-size:32px;
+}
+
+.unlock-kicker{
+  margin:5px 0 28px;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.unlock-card h1{
+  margin:0 0 10px;
+  font-size:24px;
+}
+
+.unlock-description{
+  margin:0 auto 25px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+}
+
+.unlock-field{
+  display:block;
+  margin-top:13px;
+  text-align:left;
+}
+
+.unlock-field span{
+  display:block;
+  margin:0 0 7px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.unlock-field input{
+  width:100%;
+  padding:12px 13px;
+  color:var(--text);
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:10px;
+  outline:none;
+  font:inherit;
+}
+
+.unlock-field input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(169,139,245,.12);
+}
+
+.unlock-actions{
+  display:flex;
+  gap:10px;
+  margin-top:23px;
+}
+
+.unlock-actions button{
+  flex:1;
+  justify-content:center;
+}
+
+.secondary-button{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 14px;
+  color:var(--text);
+  background:var(--panel2);
+  border:1px solid var(--line);
+  border-radius:12px;
+  font:500 14px Roboto;
+  cursor:pointer;
+}
+
+.secondary-button:hover{
+  background:var(--line);
+}
+
+.unlock-actions button:disabled{
+  opacity:.55;
+  cursor:wait;
+}
+
+.unlock-error{
+  min-height:18px;
+  margin:15px 0 0;
+  color:#f09a9a;
+  font-size:12px;
+}
+
+.unlock-preview{
+  margin:18px 0 0;
+  color:var(--muted);
+  font-size:11px;
+}
+
 @media(max-width:700px){
   .topbar{
     height:64px;

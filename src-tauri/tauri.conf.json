@@ -9,6 +9,7 @@
     "frontendDist": "../webui"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Vaultex",

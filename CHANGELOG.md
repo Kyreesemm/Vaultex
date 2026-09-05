@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added the first functional unlock screen with master-password and vault-path inputs.
+- Added frontend integration for opening, creating, locking, and checking the active vault session through Rust IPC.
+- Added a mobile-friendly unlock layout that keeps vault content unavailable until the session is unlocked.
 - Added a Rust-owned Tauri IPC service layer with one active, validated vault session.
 - Added vault create, open, lock, save, status, record listing, record reading, record creation, record updates, and record deletion commands.
 - Added structured IPC errors that avoid exposing password or decryption implementation details to the frontend.
@@ -51,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configured Linux Wayland sessions to use the Plasma-compatible XWayland path by default.
 
 ### Fixed
+- Fixed production UI loading by enabling the Tauri frontend bridge and using the bundled `webui` assets for release builds.
 - Added a Linux Wayland/WebKitGTK graphics workaround for the DMA-BUF and NVIDIA explicit synchronization startup issue.
 - Removed the static UI's dependency on an unavailable `localhost:1420` development server that could result in an HTTP 404 page.
 - Removed the custom titlebar and returned window rendering to the native Wayland/GTK/Plasma titlebar.

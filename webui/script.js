@@ -3,6 +3,13 @@ const drawer = document.querySelector('#drawer');
 const scrim = document.querySelector('#scrim');
 const toast = document.querySelector('#toast');
 const toastText = document.querySelector('#toastText');
+const unlockScreen = document.querySelector('#unlockScreen');
+const unlockError = document.querySelector('#unlockError');
+const vaultPath = document.querySelector('#vaultPath');
+const masterPassword = document.querySelector('#masterPassword');
+const openVaultButton = document.querySelector('#openVaultButton');
+const createVaultButton = document.querySelector('#createVaultButton');
+const tauriInvoke = window.__TAURI__?.core?.invoke;
 
 function openDrawer() { drawer.classList.add('open'); scrim.classList.add('open'); }
 function closeDrawer() { drawer.classList.remove('open'); scrim.classList.remove('open'); }
@@ -27,9 +34,68 @@ document.querySelectorAll('[data-page]').forEach(item => item.addEventListener('
 document.querySelectorAll('[data-page-link]').forEach(item => item.addEventListener('click', () => showPage(item.dataset.pageLink)));
 document.querySelectorAll('[data-action="new"]').forEach(item => item.addEventListener('click', () => showToast('Редактор будет доступен в следующей версии')));
 document.querySelectorAll('.reveal').forEach(item => item.addEventListener('click', () => showToast('Подтвердите доступ к секрету')));
-document.querySelector('#lockButton').addEventListener('click', () => showToast('Хранилище заблокировано — демо-режим'));
+async function invoke(command, args = {}) {
+  if (!tauriInvoke) throw new Error('Tauri IPC is unavailable');
+  return tauriInvoke(command, args);
+}
 
-// Подключение к Rust-команде Tauri не обязательно для веб-просмотра UI.
-if (window.__TAURI__?.core?.invoke) {
-  window.__TAURI__.core.invoke('vault_status').catch(() => {});
+function setLocked(locked) {
+  unlockScreen.hidden = !locked;
+  document.querySelector('.app-shell').classList.toggle('session-active', !locked);
+}
+
+function showUnlockError(message) {
+  unlockError.textContent = message;
+}
+
+async function unlockVault(command) {
+  showUnlockError('');
+  const path = vaultPath.value.trim();
+  const password = masterPassword.value;
+  if (!path || !password) {
+    showUnlockError('Укажите путь к хранилищу и мастер-пароль.');
+    return;
+  }
+  openVaultButton.disabled = true;
+  createVaultButton.disabled = true;
+  try {
+    await invoke(command, { path, password });
+    masterPassword.value = '';
+    setLocked(false);
+    showToast(command === 'vault_create' ? 'Хранилище создано' : 'Хранилище разблокировано');
+  } catch (error) {
+    showUnlockError(error?.message || 'Не удалось открыть хранилище.');
+  } finally {
+    openVaultButton.disabled = false;
+    createVaultButton.disabled = false;
+  }
+}
+
+document.querySelector('#lockButton').addEventListener('click', async () => {
+  if (!tauriInvoke) {
+    showToast('Хранилище заблокировано — демо-режим');
+    return;
+  }
+  try {
+    await invoke('vault_lock');
+    setLocked(true);
+    showToast('Хранилище заблокировано');
+  } catch (error) {
+    showToast(error?.message || 'Не удалось заблокировать хранилище');
+  }
+});
+
+openVaultButton.addEventListener('click', () => unlockVault('vault_open'));
+createVaultButton.addEventListener('click', () => unlockVault('vault_create'));
+masterPassword.addEventListener('keydown', event => {
+  if (event.key === 'Enter') unlockVault('vault_open');
+});
+
+if (tauriInvoke) {
+  invoke('vault_status')
+    .then(status => setLocked(status.locked))
+    .catch(() => setLocked(true));
+} else {
+  unlockScreen.hidden = true;
+  document.querySelector('.app-shell').classList.add('session-active');
 }
