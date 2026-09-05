@@ -6,7 +6,11 @@ const toastText = document.querySelector('#toastText');
 const unlockScreen = document.querySelector('#unlockScreen');
 const unlockError = document.querySelector('#unlockError');
 const vaultDirectory = document.querySelector('#vaultDirectory');
-const vaultSelect = document.querySelector('#vaultSelect');
+const vaultPicker = document.querySelector('#vaultPicker');
+const vaultSelectButton = document.querySelector('#vaultSelectButton');
+const vaultSelectLabel = document.querySelector('#vaultSelectLabel');
+const vaultSelectMenu = document.querySelector('#vaultSelectMenu');
+let selectedVaultPath = '';
 const masterPassword = document.querySelector('#masterPassword');
 const createVaultDirectory = document.querySelector('#createVaultDirectory');
 const createVaultName = document.querySelector('#createVaultName');
@@ -68,7 +72,7 @@ async function unlockVault(command) {
   showUnlockError('');
   const creating = command === 'vault_create';
   const directory = (creating ? createVaultDirectory : vaultDirectory).value.trim();
-  const path = creating ? directory : vaultSelect.value;
+  const path = creating ? directory : selectedVaultPath;
   const password = (creating ? createMasterPassword : masterPassword).value;
   const name = creating ? createVaultName.value.trim() : '';
   if (!directory || !path || !password || (creating && !name)) {
@@ -101,15 +105,32 @@ function updateVaultCatalog(catalog) {
   const directory = catalog.directories[0] || '';
   vaultDirectory.value = directory;
   createVaultDirectory.value = directory;
-  vaultSelect.replaceChildren();
-  if (!catalog.vaults.length) vaultSelect.add(new Option('Хранилища не найдены', ''));
-  catalog.vaults.forEach(vault => vaultSelect.add(new Option(vault.name, vault.path)));
-  if (catalog.last_vault && catalog.vaults.some(vault => vault.path === catalog.last_vault)) {
-    vaultSelect.value = catalog.last_vault;
-  } else if (catalog.vaults.length) {
-    vaultSelect.value = catalog.vaults[0].path;
-  }
+  vaultSelectMenu.replaceChildren();
+  selectedVaultPath = '';
+  vaultSelectLabel.textContent = catalog.vaults.length ? 'Выберите хранилище' : 'Хранилища не найдены';
+  catalog.vaults.forEach(vault => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'select-option';
+    option.textContent = vault.name;
+    option.dataset.path = vault.path;
+    option.addEventListener('click', () => selectVault(vault.path, vault.name));
+    vaultSelectMenu.append(option);
+  });
+  const remembered = catalog.vaults.find(vault => vault.path === catalog.last_vault);
+  selectVault((remembered || catalog.vaults[0])?.path || '', (remembered || catalog.vaults[0])?.name || 'Хранилища не найдены');
 }
+
+function selectVault(path, name) {
+  selectedVaultPath = path;
+  vaultSelectLabel.textContent = name;
+  vaultPicker.classList.remove('open');
+}
+
+vaultSelectButton.addEventListener('click', () => vaultPicker.classList.toggle('open'));
+document.addEventListener('click', event => {
+  if (!vaultPicker.contains(event.target)) vaultPicker.classList.remove('open');
+});
 
 let catalogTimer;
 function refreshCatalog() {

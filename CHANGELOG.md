@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a fallback application icon for Tauri builds.
 
 ### Changed
+- Replaced the native vault selector with a consistently styled Vaultex dropdown.
+- Added a dark, bounded vault option menu with automatic selection of the first available vault.
 - Styled the vault selector to match the dark input fields and fixed its height.
 - Automatically selects the first discovered vault when no remembered selection is available.
 - Removed the decorative background highlight so the main interface and topbar use a uniform deep graphite background.

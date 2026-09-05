@@ -17,7 +17,7 @@
         <h1>Открыть хранилище</h1>
         <p class="unlock-description">Выберите каталог и конкретное хранилище. Данные будут доступны только в памяти текущей сессии.</p>
         <label class="unlock-field"><span>Папка хранилищ</span><input id="vaultDirectory" type="text" placeholder="/home/user/.local/share/Vaultex/Vaults" autocomplete="off" /></label>
-        <label class="unlock-field"><span>Хранилище</span><select id="vaultSelect"><option value="">Загрузка списка…</option></select></label>
+        <label class="unlock-field"><span>Хранилище</span><div class="vault-select" id="vaultPicker"><button class="select-trigger" id="vaultSelectButton" type="button"><span id="vaultSelectLabel">Загрузка списка…</span><span class="material-symbols-rounded">expand_more</span></button><div class="select-menu" id="vaultSelectMenu"></div></div></label>
         <label class="unlock-field"><span>Мастер-пароль</span><input id="masterPassword" type="password" placeholder="Введите мастер-пароль" autocomplete="current-password" /></label>
         <div class="unlock-actions"><button class="primary-button" id="openVaultButton"><span class="material-symbols-rounded">lock_open</span><span>Разблокировать</span></button><button class="secondary-button" id="newVaultButton"><span class="material-symbols-rounded">add_circle</span><span>Новое хранилище</span></button></div>
       </div>
