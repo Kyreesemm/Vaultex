@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added live vault-backed creation, reading, editing, deletion, and searching for text notes and secrets in the interface.
+- Added explicit secret reveal controls and clearing of decrypted UI content when changing pages or locking the vault.
+- Added automatic persistence of dirty vault sessions before locking and backend rejection of empty master passwords.
 - Added dynamic vault-directory scanning when the unlock screen path changes.
 - Added encrypted vault display names stored inside the authenticated manifest.
 - Added platform-aware vault directory discovery and a remembered last-vault selection.

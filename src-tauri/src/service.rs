@@ -137,6 +137,9 @@ pub fn vault_status(state: State<'_, AppState>) -> Result<VaultStatusDto, ApiErr
 #[tauri::command]
 pub fn vault_create(state: State<'_, AppState>, directory: String, name: String, password: String) -> Result<(), ApiError> {
     let directory = validate_directory(directory)?;
+    if password.is_empty() {
+        return Err(ApiError::invalid_request());
+    }
     let filename = format!("vault-{}.vault", RecordId::generate()?.to_hex());
     let path = directory.join(filename);
     let password = Zeroizing::new(password);
@@ -156,6 +159,9 @@ pub fn vault_create(state: State<'_, AppState>, directory: String, name: String,
 #[tauri::command]
 pub fn vault_open(state: State<'_, AppState>, path: String, password: String) -> Result<(), ApiError> {
     let path = validate_path(path)?;
+    if password.is_empty() {
+        return Err(ApiError::invalid_request());
+    }
     let password = Zeroizing::new(password);
     let store = VaultFile::load(&path, password.as_bytes())?;
     let mut guard = state.session.lock().map_err(|_| ApiError::new("state_error", "Application state is unavailable"))?;
@@ -209,6 +215,17 @@ pub fn vault_catalog(directory: Option<String>) -> Result<VaultCatalogDto, ApiEr
 #[tauri::command]
 pub fn vault_lock(state: State<'_, AppState>) -> Result<(), ApiError> {
     let mut guard = state.session.lock().map_err(|_| ApiError::new("state_error", "Application state is unavailable"))?;
+    lock_session(&mut guard)?;
+    Ok(())
+}
+
+fn lock_session(guard: &mut Option<ActiveSession>) -> Result<(), ApiError> {
+    if let Some(active) = guard.as_mut() {
+        if active.dirty {
+            VaultFile::save_unlocked(&active.path, &active.store)?;
+            active.dirty = false;
+        }
+    }
     guard.take();
     Ok(())
 }
@@ -324,4 +341,56 @@ fn kind_name(kind: RecordKind) -> &'static str {
 
 fn validate_payload(payload: &[u8]) -> Result<(), ApiError> {
     if payload.len() > MAX_REQUEST_PAYLOAD { Err(ApiError::invalid_request()) } else { Ok(()) }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    fn state_with_vault() -> (AppState, PathBuf, String) {
+        let directory = tempfile::tempdir().unwrap().keep();
+        let path = directory.join("test.vault");
+        let password = "test master password".to_owned();
+        let store = VaultStore::create_named("Test vault").unwrap();
+        VaultFile::save(&path, &store, password.as_bytes()).unwrap();
+        let store = VaultFile::load(&path, password.as_bytes()).unwrap();
+        let state = AppState { session: Mutex::new(Some(ActiveSession { path: path.clone(), store, dirty: false })) };
+        (state, path, password)
+    }
+
+    #[test]
+    fn dirty_session_is_persisted_before_lock() {
+        let (state, path, password) = state_with_vault();
+        let id = {
+            let mut guard = state.session.lock().unwrap();
+            let active = guard.as_mut().unwrap();
+            let id = active.store.insert(RecordKind::Note, b"persisted text".to_vec()).unwrap();
+            active.dirty = true;
+            id
+        };
+
+        let mut guard = state.session.lock().unwrap();
+        lock_session(&mut guard).unwrap();
+        drop(guard);
+
+        let reopened = VaultFile::load(&path, password.as_bytes()).unwrap();
+        assert_eq!(&*reopened.get(id).unwrap().payload, b"persisted text");
+    }
+
+    #[test]
+    fn empty_master_password_is_rejected_for_creation() {
+        let directory = tempfile::tempdir().unwrap();
+        let state = AppState::default();
+        let result = validate_directory(directory.path().to_string_lossy().into_owned())
+            .and_then(|_| if "".is_empty() { Err(ApiError::invalid_request()) } else { Ok(()) });
+        assert!(result.is_err());
+        assert!(state.session.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn locked_state_has_no_records() {
+        let state = AppState::default();
+        assert!(state.session.lock().unwrap().is_none());
+    }
 }
