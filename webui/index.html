@@ -81,6 +81,92 @@
         <div class="unlock-actions"><button class="primary-button" id="saveRecordButton" type="button">Сохранить</button><button class="secondary-button" id="cancelRecordButton" type="button">Отмена</button><button class="secondary-button" id="deleteRecordButton" type="button" hidden>Удалить</button></div>
       </section>
     </main>
+
+    <!-- Полноэкранный просмотр и Markdown-редактор заметок -->
+    <section class="note-fullscreen-view" id="noteFullscreenView" hidden>
+      <header class="note-view-topbar">
+        <button class="back-button" id="noteViewBackBtn" type="button" title="Вернуться к списку">
+          <span class="material-symbols-rounded">arrow_back</span>
+          <span>К заметкам</span>
+        </button>
+
+        <div class="note-view-modes" role="tablist" aria-label="Режимы отображения">
+          <button class="mode-tab active" id="noteModeView" type="button" data-mode="view">
+            <span class="material-symbols-rounded">visibility</span>
+            <span>Просмотр</span>
+          </button>
+          <button class="mode-tab" id="noteModeLive" type="button" data-mode="live">
+            <span class="material-symbols-rounded">edit_note</span>
+            <span>Редактор</span>
+          </button>
+          <button class="mode-tab" id="noteModeRaw" type="button" data-mode="raw">
+            <span class="material-symbols-rounded">code</span>
+            <span>Исходник</span>
+          </button>
+        </div>
+
+        <div class="note-view-actions">
+          <div class="note-save-status" id="noteSaveStatus">
+            <span class="save-status-dot"></span>
+            <span id="noteSaveStatusText">Сохранено</span>
+          </div>
+          <button class="primary-button compact" id="noteViewSaveBtn" type="button">
+            <span class="material-symbols-rounded">save</span>
+            <span>Сохранить</span>
+          </button>
+          <button class="icon-button danger-hover" id="noteViewDeleteBtn" type="button" title="Удалить заметку" aria-label="Удалить заметку">
+            <span class="material-symbols-rounded">delete</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="note-view-scroll">
+        <div class="note-view-content-wrapper">
+          <div class="note-title-container">
+            <input class="note-title-input" id="noteViewTitleInput" type="text" placeholder="Без названия" maxlength="160" autocomplete="off" />
+          </div>
+
+          <div class="note-meta-bar">
+            <span class="meta-item"><span class="material-symbols-rounded">schedule</span><span id="noteMetaModified">Недавно</span></span>
+            <span class="meta-item"><span class="material-symbols-rounded">text_snippet</span><span id="noteMetaWords">0 слов</span></span>
+            <span class="meta-item"><span class="material-symbols-rounded">pin</span><span id="noteMetaChars">0 символов</span></span>
+          </div>
+
+          <div class="note-canvas" id="noteCanvas">
+            <!-- Режим просмотра: полный рендеринг Markdown -->
+            <div class="note-rendered-view markdown-body" id="noteRenderedView"></div>
+
+            <!-- Режим Live (Obsidian): интерактивные блоки -->
+            <div class="note-live-editor" id="noteLiveEditor" hidden></div>
+
+            <!-- Режим исходного кода: сплошной текст Markdown -->
+            <textarea class="note-raw-textarea" id="noteRawTextarea" placeholder="Начните писать в формате Markdown..." spellcheck="false" hidden></textarea>
+          </div>
+
+          <p class="unlock-error" id="noteViewError" role="alert"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div class="modal-scrim" id="deleteConfirmModal" hidden>
+      <div class="modal-card">
+        <div class="modal-icon-wrapper danger">
+          <span class="material-symbols-rounded">delete_forever</span>
+        </div>
+        <h2 class="modal-title">Удалить заметку?</h2>
+        <p class="modal-description" id="deleteModalDescription">
+          Вы действительно хотите удалить эту заметку? Данные будут безвозвратно удалены из зашифрованного хранилища.
+        </p>
+        <div class="modal-actions">
+          <button class="secondary-button" id="deleteModalCancelBtn" type="button">Отмена</button>
+          <button class="danger-button" id="deleteModalConfirmBtn" type="button">
+            <span class="material-symbols-rounded">delete</span>
+            <span>Удалить</span>
+          </button>
+        </div>
+      </div>
+    </div>
     <nav class="bottom-nav"><button class="bottom-item active" data-page="overview"><span class="material-symbols-rounded">grid_view</span><small>Обзор</small></button><button class="bottom-item" data-page="notes"><span class="material-symbols-rounded">description</span><small>Заметки</small></button><button class="bottom-item" data-page="secrets"><span class="material-symbols-rounded">key</span><small>Секреты</small></button><button class="bottom-item" data-page="collections"><span class="material-symbols-rounded">folder_special</span><small>Коллекции</small></button></nav>
   </div>
   <div class="toast" id="toast"><span class="material-symbols-rounded">check_circle</span><span id="toastText">Готово</span></div>

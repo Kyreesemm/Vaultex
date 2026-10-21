@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added fullscreen responsive Markdown note viewer and Obsidian-style live preview editor with interactive block editing and raw source toggle.
+- Added in-card note deletion button with an authenticated confirmation modal.
+- Added last-modified timestamp tracking and formatting for encrypted note records.
+- Added blurred privacy preview masks for note content snippets on dashboard cards.
 - Added live vault-backed creation, reading, editing, deletion, and searching for text notes and secrets in the interface.
 - Added explicit secret reveal controls and clearing of decrypted UI content when changing pages or locking the vault.
 - Added automatic persistence of dirty vault sessions before locking and backend rejection of empty master passwords.
@@ -56,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a fallback application icon for Tauri builds.
 
 ### Changed
+- Redesigned note cards with aligned title headers, status metadata, and direct card opening.
+- Unified note and secret editors under dark graphite-grey styling matching the Vaultex visual language.
 - Replaced the native vault selector with a consistently styled Vaultex dropdown.
 - Added a dark, bounded vault option menu with automatic selection of the first available vault.
 - Styled the vault selector to match the dark input fields and fixed its height.

@@ -7,5 +7,6 @@ AGENTS.md
 
 # Local editor and OS files
 .DS_Store
+.claude/
 .idea/
 .vscode/
