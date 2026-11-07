@@ -1,6 +1,6 @@
 [package]
 name = "rust_lib_vaultex"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
 
 [lib]
@@ -17,6 +17,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "wasmbind"] }
+hmac = "0.12"
+sha1 = "0.10"
+sha2 = "0.10"
+ureq = { version = "2.9", default-features = false, features = ["tls", "json"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Storage_FileSystem"] }

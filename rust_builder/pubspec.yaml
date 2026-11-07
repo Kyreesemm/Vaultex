@@ -1,6 +1,6 @@
 name: rust_lib_vaultex
 description: "Utility to build Rust code"
-version: 0.0.1
+version: 2.0.0
 publish_to: none
 
 environment:

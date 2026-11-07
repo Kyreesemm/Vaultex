@@ -485,7 +485,7 @@ packages:
       path: rust_builder
       relative: true
     source: path
-    version: "0.0.1"
+    version: "2.0.0"
   shared_preferences:
     dependency: "direct main"
     description:

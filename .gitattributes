@@ -1,0 +1,11 @@
+# GitHub Linguist overrides:
+# Hide platform boilerplate and runner templates from language statistics
+linux/** linguist-vendored
+windows/** linguist-vendored
+rust_builder/** linguist-vendored
+android/** linguist-vendored
+
+# Mark generated code
+lib/src/rust/** linguist-generated
+rust/src/frb_generated.rs linguist-generated
+*.lock linguist-generated
