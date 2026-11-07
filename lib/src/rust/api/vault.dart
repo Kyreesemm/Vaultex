@@ -4,6 +4,9 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import '../strength.dart';
+import '../sync.dart';
+import '../totp.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
@@ -97,6 +100,47 @@ Future<void> deleteEntry({required String id}) =>
 
 Future<List<LocalVaultItem>> listVaultFiles({required String directory}) =>
     RustLib.instance.api.crateApiVaultListVaultFiles(directory: directory);
+
+Future<String> getVaultFileExtension() =>
+    RustLib.instance.api.crateApiVaultGetVaultFileExtension();
+
+Future<TotpCodeResult> generateTotpCode(
+        {required String secretBase32, BigInt? timestampSecs}) =>
+    RustLib.instance.api.crateApiVaultGenerateTotpCode(
+        secretBase32: secretBase32, timestampSecs: timestampSecs);
+
+Future<bool> validateTotpCode(
+        {required String secretBase32, required String code}) =>
+    RustLib.instance.api
+        .crateApiVaultValidateTotpCode(secretBase32: secretBase32, code: code);
+
+Future<PasswordStrengthResult> evaluatePasswordStrength(
+        {required String password}) =>
+    RustLib.instance.api
+        .crateApiVaultEvaluatePasswordStrength(password: password);
+
+Future<List<CloudVaultItem>> syncListDriveVaults(
+        {required String accessToken}) =>
+    RustLib.instance.api
+        .crateApiVaultSyncListDriveVaults(accessToken: accessToken);
+
+Future<CloudVaultItem> syncUploadVaultToDrive(
+        {required String localPath,
+        required String accessToken,
+        String? existingFileId}) =>
+    RustLib.instance.api.crateApiVaultSyncUploadVaultToDrive(
+        localPath: localPath,
+        accessToken: accessToken,
+        existingFileId: existingFileId);
+
+Future<void> syncDownloadVaultFromDrive(
+        {required String fileId,
+        required String destinationPath,
+        required String accessToken}) =>
+    RustLib.instance.api.crateApiVaultSyncDownloadVaultFromDrive(
+        fileId: fileId,
+        destinationPath: destinationPath,
+        accessToken: accessToken);
 
 Future<Uint8List> exportVaultBytes() =>
     RustLib.instance.api.crateApiVaultExportVaultBytes();

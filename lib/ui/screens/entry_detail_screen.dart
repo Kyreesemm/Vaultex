@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../data/models/vault_entry.dart';
 import '../../logic/blocs/entries_bloc.dart';
 import '../widgets/secret_field_tile.dart';
+import '../widgets/totp_field_tile.dart';
 import 'entry_edit_screen.dart';
 
 class EntryDetailScreen extends StatelessWidget {
@@ -184,12 +185,14 @@ class EntryDetailScreen extends StatelessWidget {
           value: data.password,
           icon: Icons.lock_outline,
         ),
-        if (data.twoFactorSecret != null && data.twoFactorSecret!.isNotEmpty)
+        if (data.twoFactorSecret != null && data.twoFactorSecret!.isNotEmpty) ...[
+          TotpFieldTile(secret: data.twoFactorSecret!),
           SecretFieldTile(
-            label: '2FA / TOTP Ключ',
+            label: '2FA Секретный Ключ (Base32)',
             value: data.twoFactorSecret!,
-            icon: Icons.phonelink_lock,
+            icon: Icons.key_outlined,
           ),
+        ],
         if (data.phone != null && data.phone!.isNotEmpty)
           _buildInfoTile(
             context,

@@ -32,4 +32,18 @@ void main() {
     expect(entry.category, EntryCategory.token);
     expect(entry.tokenData?.token, 'sk-12345');
   });
+
+  test('ParsedAccountData handles 2FA TOTP secret key', () {
+    final acc = ParsedAccountData(
+      service: 'Google',
+      username: 'user@gmail.com',
+      email: 'user@gmail.com',
+      password: 'password123',
+      twoFactorSecret: 'JBSWY3DPEHPK3PXP',
+    );
+    final json = acc.toJson();
+    final restored = ParsedAccountData.fromJson(json);
+
+    expect(restored.twoFactorSecret, 'JBSWY3DPEHPK3PXP');
+  });
 }

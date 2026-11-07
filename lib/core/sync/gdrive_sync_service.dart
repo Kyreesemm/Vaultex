@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import '../../src/rust/api/vault.dart' as ffi;
 
 class GDriveFileInfo {
   final String id;
@@ -26,114 +25,54 @@ class GDriveFileInfo {
 }
 
 /// Google Drive Sync Provider:
-/// Transfers ONLY encrypted .vault container files (zero-knowledge cloud sync).
-/// Cloud has NO access to decryption keys, DEK or plaintext contents.
+/// Transfers ONLY encrypted .vex container files (zero-knowledge cloud sync).
+/// The sync protocol and network engine are fully executed in native Rust core,
+/// ensuring that cryptographic secrets and unencrypted data never touch the network
+/// or browser/VM heap storage.
 class GDriveSyncService {
-  static const String _driveFilesEndpoint = 'https://www.googleapis.com/drive/v3/files';
-  static const String _driveUploadEndpoint =
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-
-  /// Lists all .vault files in Google Drive
+  /// Lists all .vex files in Google Drive via native Rust client
   Future<List<GDriveFileInfo>> listVaultFiles(String accessToken) async {
-    final uri = Uri.parse(
-        '$_driveFilesEndpoint?q=name+contains+\'.vault\'+and+trashed=false&fields=files(id,name,size,modifiedTime)');
-    final response = await http.get(
-      uri,
-      headers: {'Authorization': 'Bearer $accessToken'},
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка загрузки списка из Google Drive: ${response.body}');
-    }
-
-    final data = jsonDecode(response.body);
-    final files = (data['files'] as List<dynamic>?) ?? [];
-    return files.map((f) => GDriveFileInfo.fromJson(f as Map<String, dynamic>)).toList();
+    final rawList = await ffi.syncListDriveVaults(accessToken: accessToken);
+    return rawList
+        .map((item) => GDriveFileInfo(
+              id: item.id,
+              name: item.name,
+              size: item.sizeBytes.toInt(),
+              modifiedTime: DateTime.tryParse(item.modifiedTime) ?? DateTime.now(),
+            ))
+        .toList();
   }
 
-  /// Uploads an encrypted .vault file to Google Drive (creates or updates)
+  /// Uploads an encrypted .vex file to Google Drive (creates or updates) via native Rust client
   Future<GDriveFileInfo> uploadVaultFile({
     required File localFile,
     required String accessToken,
     String? existingFileId,
   }) async {
-    if (!localFile.existsSync()) {
-      throw Exception('Локальный файл не найден: ${localFile.path}');
-    }
-
-    final bytes = await localFile.readAsBytes();
-    final filename = localFile.uri.pathSegments.last;
-
-    if (existingFileId != null) {
-      // Update existing file content
-      final updateUri = Uri.parse(
-          'https://www.googleapis.com/upload/drive/v3/files/$existingFileId?uploadType=media');
-      final response = await http.patch(
-        updateUri,
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/octet-stream',
-        },
-        body: bytes,
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Ошибка обновления файла в Google Drive: ${response.body}');
-      }
-      return GDriveFileInfo.fromJson(jsonDecode(response.body));
-    } else {
-      // Multipart upload new file
-      final metadata = jsonEncode({
-        'name': filename,
-        'mimeType': 'application/octet-stream',
-      });
-
-      const boundary = '-------314159265358979323846';
-      const delimiter = '\r\n--$boundary\r\n';
-      const closeDelimiter = '\r\n--$boundary--';
-
-      final body = <int>[];
-      body.addAll(utf8.encode(
-          '${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n$metadata'));
-      body.addAll(utf8.encode(
-          '${delimiter}Content-Type: application/octet-stream\r\n\r\n'));
-      body.addAll(bytes);
-      body.addAll(utf8.encode(closeDelimiter));
-
-      final response = await http.post(
-        Uri.parse(_driveUploadEndpoint),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'multipart/related; boundary=$boundary',
-          'Content-Length': body.length.toString(),
-        },
-        body: body,
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Ошибка загрузки файла в Google Drive: ${response.body}');
-      }
-      return GDriveFileInfo.fromJson(jsonDecode(response.body));
-    }
+    final res = await ffi.syncUploadVaultToDrive(
+      localPath: localFile.path,
+      accessToken: accessToken,
+      existingFileId: existingFileId,
+    );
+    return GDriveFileInfo(
+      id: res.id,
+      name: res.name,
+      size: res.sizeBytes.toInt(),
+      modifiedTime: DateTime.tryParse(res.modifiedTime) ?? DateTime.now(),
+    );
   }
 
-  /// Downloads an encrypted .vault file from Google Drive to local disk
+  /// Downloads an encrypted .vex file from Google Drive to local disk via native Rust client
   Future<File> downloadVaultFile({
     required String fileId,
     required File targetFile,
     required String accessToken,
   }) async {
-    final downloadUri = Uri.parse('$_driveFilesEndpoint/$fileId?alt=media');
-    final response = await http.get(
-      downloadUri,
-      headers: {'Authorization': 'Bearer $accessToken'},
+    await ffi.syncDownloadVaultFromDrive(
+      fileId: fileId,
+      destinationPath: targetFile.path,
+      accessToken: accessToken,
     );
-
-    if (response.statusCode != 200) {
-      throw Exception('Ошибка скачивания файла из Google Drive: ${response.body}');
-    }
-
-    await targetFile.writeAsBytes(response.bodyBytes, flush: true);
     return targetFile;
   }
 }

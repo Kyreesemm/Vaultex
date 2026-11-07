@@ -141,7 +141,7 @@ class VaultPickerScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             icon: const Icon(Icons.file_open_outlined),
-            label: const Text('Выбрать .vault'),
+            label: const Text('Выбрать .vex'),
             onPressed: () => _pickCustomVaultFile(context),
           ),
         ),
@@ -353,7 +353,7 @@ class VaultPickerScreen extends StatelessWidget {
   void _pickCustomVaultFile(BuildContext context) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['vault'],
+      allowedExtensions: ['vex', 'vault'],
     );
 
     if (result != null && result.files.single.path != null) {

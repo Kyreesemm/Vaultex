@@ -11,6 +11,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
+import 'strength.dart';
+import 'sync.dart';
+import 'totp.dart';
 
 abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RustLibApiImplPlatform({
@@ -27,7 +30,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  BigInt dco_decode_box_autoadd_u_64(dynamic raw);
+
+  @protected
+  CloudVaultItem dco_decode_cloud_vault_item(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<CloudVaultItem> dco_decode_list_cloud_vault_item(dynamic raw);
 
   @protected
   List<LocalVaultItem> dco_decode_list_local_vault_item(dynamic raw);
@@ -46,6 +61,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
+
+  @protected
+  PasswordStrengthResult dco_decode_password_strength_result(dynamic raw);
+
+  @protected
+  TotpCodeResult dco_decode_totp_code_result(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -72,7 +96,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  CloudVaultItem sse_decode_cloud_vault_item(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<CloudVaultItem> sse_decode_list_cloud_vault_item(
+      SseDeserializer deserializer);
 
   @protected
   List<LocalVaultItem> sse_decode_list_local_vault_item(
@@ -93,6 +130,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  PasswordStrengthResult sse_decode_password_strength_result(
+      SseDeserializer deserializer);
+
+  @protected
+  TotpCodeResult sse_decode_totp_code_result(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -122,7 +169,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_cloud_vault_item(
+      CloudVaultItem self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_cloud_vault_item(
+      List<CloudVaultItem> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_local_vault_item(
@@ -145,6 +206,17 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_password_strength_result(
+      PasswordStrengthResult self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_totp_code_result(
+      TotpCodeResult self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

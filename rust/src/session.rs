@@ -119,11 +119,11 @@ impl SessionManager {
             safe_name
         };
 
-        let filename = format!("{}.vault", safe_name);
+        let filename = format!("{}.vex", safe_name);
         let mut path = dir.join(&filename);
         let mut counter = 1;
         while path.exists() {
-            path = dir.join(format!("{}-{}.vault", safe_name, counter));
+            path = dir.join(format!("{}-{}.vex", safe_name, counter));
             counter += 1;
         }
 
@@ -408,6 +408,7 @@ mod tests {
         assert!(info.is_unlocked);
         assert_eq!(info.name.as_deref(), Some("Work Vault"));
         assert_eq!(info.record_count, 0);
+        assert!(info.path.as_ref().unwrap().ends_with(".vex"));
 
         // 2. Insert Account
         let acc_id = SessionManager::upsert_payload(

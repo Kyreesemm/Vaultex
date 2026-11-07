@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/security_service.dart';
 import '../../data/repositories/vault_repository.dart';
+import '../../src/rust/strength.dart';
 
 class PasswordGeneratorDialog extends StatefulWidget {
   final ValueChanged<String>? onSelectPassword;
@@ -17,6 +18,7 @@ class _PasswordGeneratorDialogState extends State<PasswordGeneratorDialog> {
   bool _includeSymbols = true;
   bool _includeNumbers = true;
   String _generated = '';
+  PasswordStrengthResult? _strength;
 
   @override
   void initState() {
@@ -30,9 +32,11 @@ class _PasswordGeneratorDialogState extends State<PasswordGeneratorDialog> {
       includeSymbols: _includeSymbols,
       includeNumbers: _includeNumbers,
     );
+    final strength = await _repository.evaluatePassword(pwd);
     if (mounted) {
       setState(() {
         _generated = pwd;
+        _strength = strength;
       });
     }
   }
@@ -99,7 +103,30 @@ class _PasswordGeneratorDialogState extends State<PasswordGeneratorDialog> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            if (_strength != null) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(
+                    _strength!.score >= 3 ? Icons.shield_outlined : Icons.warning_amber_rounded,
+                    size: 16,
+                    color: _strength!.score >= 3 ? Colors.green : Colors.orange,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${_strength!.feedback} (~${_strength!.crackTimeDisplay})',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _strength!.score >= 3 ? Colors.green : Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

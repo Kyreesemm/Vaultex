@@ -1,7 +1,14 @@
 use crate::{
     model::{AccountData, ApiTokenData, NoteData, RecordKind, RecordPayload, SecretRecoveryData},
     session::{generate_password as gen_pwd, SessionManager},
+    strength::{analyze_password_strength, PasswordStrengthResult},
+    sync::{download_vault_from_drive, list_drive_vaults, upload_vault_to_drive, CloudVaultItem},
+    totp::{generate_totp, validate_totp, TotpAlgorithm, TotpCodeResult},
 };
+
+pub use crate::strength::PasswordStrengthResult as RustPasswordStrength;
+pub use crate::sync::CloudVaultItem as RustCloudVaultItem;
+pub use crate::totp::TotpCodeResult as RustTotpResult;
 
 #[derive(Clone, Debug)]
 pub struct VaultInfo {
@@ -208,7 +215,7 @@ pub fn list_vault_files(directory: String) -> Vec<LocalVaultItem> {
     if let Ok(entries) = std::fs::read_dir(dir_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().is_some_and(|ext| ext == "vault") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "vex" || ext == "vault") {
                 let metadata = entry.metadata().ok();
                 let size_bytes = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
                 let last_modified = metadata
@@ -237,6 +244,47 @@ pub fn list_vault_files(directory: String) -> Vec<LocalVaultItem> {
 
     result.sort_by(|a, b| b.last_modified.cmp(&a.last_modified));
     result
+}
+
+pub fn get_vault_file_extension() -> String {
+    "vex".to_string()
+}
+
+pub fn generate_totp_code(
+    secret_base32: String,
+    timestamp_secs: Option<u64>,
+) -> Result<TotpCodeResult, String> {
+    let ts = timestamp_secs.unwrap_or_else(|| chrono::Utc::now().timestamp() as u64);
+    generate_totp(&secret_base32, ts, TotpAlgorithm::Sha1, 6, 30)
+}
+
+pub fn validate_totp_code(secret_base32: String, code: String) -> Result<bool, String> {
+    let ts = chrono::Utc::now().timestamp() as u64;
+    validate_totp(&secret_base32, &code, ts, 1, 30)
+}
+
+pub fn evaluate_password_strength(password: String) -> PasswordStrengthResult {
+    analyze_password_strength(&password)
+}
+
+pub fn sync_list_drive_vaults(access_token: String) -> Result<Vec<CloudVaultItem>, String> {
+    list_drive_vaults(&access_token, "vex")
+}
+
+pub fn sync_upload_vault_to_drive(
+    local_path: String,
+    access_token: String,
+    existing_file_id: Option<String>,
+) -> Result<CloudVaultItem, String> {
+    upload_vault_to_drive(&local_path, &access_token, existing_file_id.as_deref())
+}
+
+pub fn sync_download_vault_from_drive(
+    file_id: String,
+    destination_path: String,
+    access_token: String,
+) -> Result<(), String> {
+    download_vault_from_drive(&file_id, &destination_path, &access_token)
 }
 
 pub fn export_vault_bytes() -> Result<Vec<u8>, String> {

@@ -3,5 +3,8 @@ pub mod model;
 pub mod container;
 pub mod persistence;
 pub mod session;
+pub mod totp;
+pub mod strength;
+pub mod sync;
 pub mod api;
 mod frb_generated;

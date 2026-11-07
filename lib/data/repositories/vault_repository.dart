@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../src/rust/api/vault.dart' as ffi;
+import '../../src/rust/strength.dart';
+import '../../src/rust/totp.dart';
 import '../models/vault_entry.dart';
 
 class VaultRepository {
@@ -164,6 +166,18 @@ class VaultRepository {
       includeSymbols: includeSymbols,
       includeNumbers: includeNumbers,
     );
+  }
+
+  Future<PasswordStrengthResult> evaluatePassword(String password) async {
+    return await ffi.evaluatePasswordStrength(password: password);
+  }
+
+  Future<TotpCodeResult> getTotpCode(String secretBase32) async {
+    return await ffi.generateTotpCode(secretBase32: secretBase32);
+  }
+
+  Future<bool> verifyTotpCode(String secretBase32, String code) async {
+    return await ffi.validateTotpCode(secretBase32: secretBase32, code: code);
   }
 
   /// Syncthing / Local Storage Directory
