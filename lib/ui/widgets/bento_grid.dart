@@ -27,14 +27,14 @@ class BentoGrid extends StatelessWidget {
         final isNarrow = constraints.maxWidth < 600;
 
         if (isNarrow) {
-          // Horizontal scrolling or 2x2 grid
+          // Compact 2x2 grid for mobile phones
           return GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 2.1,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 2.35,
             children: [
               _buildCard(
                 context,
@@ -43,6 +43,7 @@ class BentoGrid extends StatelessWidget {
                 icon: Icons.person_outline,
                 color: AppTheme.accountColor,
                 category: EntryCategory.account,
+                isNarrow: true,
               ),
               _buildCard(
                 context,
@@ -51,6 +52,7 @@ class BentoGrid extends StatelessWidget {
                 icon: Icons.key_outlined,
                 color: AppTheme.tokenColor,
                 category: EntryCategory.token,
+                isNarrow: true,
               ),
               _buildCard(
                 context,
@@ -59,6 +61,7 @@ class BentoGrid extends StatelessWidget {
                 icon: Icons.shield_outlined,
                 color: AppTheme.secretColor,
                 category: EntryCategory.secret,
+                isNarrow: true,
               ),
               _buildCard(
                 context,
@@ -67,11 +70,12 @@ class BentoGrid extends StatelessWidget {
                 icon: Icons.description_outlined,
                 color: AppTheme.noteColor,
                 category: EntryCategory.note,
+                isNarrow: true,
               ),
             ],
           );
         } else {
-          // 4-column Bento row
+          // 4-column Bento row for desktop/tablet
           return Row(
             children: [
               Expanded(
@@ -82,9 +86,10 @@ class BentoGrid extends StatelessWidget {
                   icon: Icons.person_outline,
                   color: AppTheme.accountColor,
                   category: EntryCategory.account,
+                  isNarrow: false,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildCard(
                   context,
@@ -93,9 +98,10 @@ class BentoGrid extends StatelessWidget {
                   icon: Icons.key_outlined,
                   color: AppTheme.tokenColor,
                   category: EntryCategory.token,
+                  isNarrow: false,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildCard(
                   context,
@@ -104,9 +110,10 @@ class BentoGrid extends StatelessWidget {
                   icon: Icons.shield_outlined,
                   color: AppTheme.secretColor,
                   category: EntryCategory.secret,
+                  isNarrow: false,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildCard(
                   context,
@@ -115,6 +122,7 @@ class BentoGrid extends StatelessWidget {
                   icon: Icons.description_outlined,
                   color: AppTheme.noteColor,
                   category: EntryCategory.note,
+                  isNarrow: false,
                 ),
               ),
             ],
@@ -131,6 +139,7 @@ class BentoGrid extends StatelessWidget {
     required IconData icon,
     required Color color,
     required EntryCategory category,
+    required bool isNarrow,
   }) {
     final isSelected = selectedCategory == category;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -143,39 +152,44 @@ class BentoGrid extends StatelessWidget {
           onCategorySelected(category);
         }
       },
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(isNarrow ? 14 : 16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        duration: const Duration(milliseconds: 180),
+        padding: EdgeInsets.symmetric(
+          horizontal: isNarrow ? 10 : 12,
+          vertical: isNarrow ? 7 : 10,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? color.withOpacity(0.18)
-              : (isDark ? const Color(0xFF1E293B) : Colors.white),
-          borderRadius: BorderRadius.circular(18),
+              : (isDark ? AppTheme.cardDark : Colors.white),
+          borderRadius: BorderRadius.circular(isNarrow ? 14 : 16),
           border: Border.all(
-            color: isSelected ? color : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-            width: isSelected ? 2 : 1,
+            color: isSelected
+                ? color
+                : (isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0)),
+            width: isSelected ? 1.8 : 1.0,
           ),
           boxShadow: [
             if (isSelected)
               BoxShadow(
                 color: color.withOpacity(0.2),
                 blurRadius: 8,
-                offset: const Offset(0, 3),
+                offset: const Offset(0, 2),
               ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(isNarrow ? 6 : 7),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withOpacity(0.14),
+                borderRadius: BorderRadius.circular(isNarrow ? 9 : 11),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: isNarrow ? 16 : 18),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: isNarrow ? 8 : 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,9 +198,9 @@ class BentoGrid extends StatelessWidget {
                   Text(
                     count.toString(),
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: isNarrow ? 15 : 17,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: isDark ? AppTheme.textPrimaryDark : Colors.black87,
                     ),
                   ),
                   Text(
@@ -194,9 +208,9 @@ class BentoGrid extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: isNarrow ? 10 : 11,
                       fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      color: isDark ? AppTheme.textSecondaryDark : Colors.grey[600],
                     ),
                   ),
                 ],

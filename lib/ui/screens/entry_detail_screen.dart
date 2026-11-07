@@ -73,10 +73,10 @@ class EntryDetailScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  color: isDark ? AppTheme.cardDark : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    color: isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: Row(
@@ -282,10 +282,10 @@ class EntryDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? AppTheme.cardDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0),
         ),
       ),
       child: MarkdownBody(
@@ -300,7 +300,7 @@ class EntryDetailScreen extends StatelessWidget {
           h1: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           code: TextStyle(
-            backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+            backgroundColor: isDark ? AppTheme.backgroundDark : const Color(0xFFF1F5F9),
             fontFamily: 'monospace',
           ),
         ),
@@ -320,10 +320,10 @@ class EntryDetailScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        color: isDark ? AppTheme.cardDark : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0),
         ),
       ),
       child: Row(
@@ -369,10 +369,10 @@ class EntryDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        color: isDark ? AppTheme.cardDark : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0),
         ),
       ),
       child: Column(

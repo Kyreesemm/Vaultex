@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/security_service.dart';
+import '../../core/theme.dart';
 import '../../data/repositories/vault_repository.dart';
 import '../../src/rust/strength.dart';
 
@@ -63,10 +64,10 @@ class _PasswordGeneratorDialogState extends State<PasswordGeneratorDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                color: isDark ? AppTheme.backgroundDark : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                  color: isDark ? AppTheme.cardBorderDark : const Color(0xFFCBD5E1),
                 ),
               ),
               child: Row(

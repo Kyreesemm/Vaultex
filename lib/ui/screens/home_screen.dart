@@ -6,6 +6,7 @@ import '../../logic/blocs/entries_bloc.dart';
 import '../../logic/blocs/vault_bloc.dart';
 import '../widgets/bento_grid.dart';
 import '../widgets/password_generator_dialog.dart';
+import '../widgets/vaultex_header_bar.dart';
 import 'entry_detail_screen.dart';
 import 'entry_edit_screen.dart';
 import 'settings_dialog.dart';
@@ -49,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 900;
+    final isCompact = screenWidth < 600;
 
     return BlocBuilder<VaultBloc, VaultState>(
       builder: (context, vaultState) {
@@ -60,48 +62,21 @@ class _HomeScreenState extends State<HomeScreen> {
         final hasConflict = vaultState.conflictDetected;
 
         return Scaffold(
-          appBar: AppBar(
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.shield, color: AppTheme.primaryColor, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      vaultInfo.name ?? 'Хранилище',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'AES-256-GCM • Argon2id',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.vpn_key_outlined),
-                tooltip: 'Генератор паролей',
-                onPressed: () {
+          // Floating custom Vaultex header bar replacing generic appbar
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(isCompact ? 60 : 66),
+            child: SafeArea(
+              bottom: false,
+              child: VaultexHeaderBar(
+                vaultName: vaultInfo.name ?? 'Хранилище',
+                vaultPath: vaultInfo.path,
+                onOpenGenerator: () {
                   showDialog(
                     context: context,
                     builder: (_) => const PasswordGeneratorDialog(),
                   );
                 },
-              ),
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                tooltip: 'Настройки',
-                onPressed: () {
+                onOpenSettings: () {
                   showDialog(
                     context: context,
                     builder: (_) => SettingsDialog(
@@ -110,55 +85,63 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 },
-              ),
-              IconButton(
-                icon: const Icon(Icons.lock_outline, color: Colors.amber),
-                tooltip: 'Заблокировать (Затереть RAM)',
-                onPressed: () {
+                onLockVault: () {
                   context.read<VaultBloc>().add(LockVaultEvent());
                 },
               ),
-              const SizedBox(width: 8),
-            ],
+            ),
           ),
-          body: Column(
-            children: [
-              // Syncthing Conflict Banner
-              if (hasConflict)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  color: Colors.amber.withOpacity(0.2),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, color: Colors.amber),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'Внимание: Файл хранилища обновлен внешней программой (Syncthing).',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          body: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // Syncthing Conflict Banner
+                if (hasConflict)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Внимание: Файл обновлен внешней программой (Syncthing).',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
                         ),
-                      ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('Перезагрузить'),
-                        onPressed: () {
-                          context.read<VaultBloc>().add(CheckConflictEvent());
-                          context.read<EntriesBloc>().add(const LoadEntriesEvent());
-                        },
-                      ),
-                    ],
+                        TextButton.icon(
+                          icon: const Icon(Icons.refresh, size: 14),
+                          label: const Text('Обновить', style: TextStyle(fontSize: 12)),
+                          onPressed: () {
+                            context.read<VaultBloc>().add(CheckConflictEvent());
+                            context.read<EntriesBloc>().add(const LoadEntriesEvent());
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-              Expanded(
-                child: isDesktop ? _buildDesktopLayout(context) : _buildMobileLayout(context),
-              ),
-            ],
+                Expanded(
+                  child: isDesktop
+                      ? _buildDesktopLayout(context)
+                      : _buildMobileLayout(context, isCompact),
+                ),
+              ],
+            ),
           ),
           floatingActionButton: FloatingActionButton.extended(
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 4,
             icon: const Icon(Icons.add),
-            label: const Text('Добавить'),
+            label: const Text('Добавить', style: TextStyle(fontWeight: FontWeight.bold)),
             onPressed: () => _openCreateScreen(context),
           ),
         );
@@ -166,7 +149,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(BuildContext context, bool isCompact) {
+    final horizontalPad = isCompact ? 12.0 : 16.0;
+
     return BlocBuilder<EntriesBloc, EntriesState>(
       builder: (context, state) {
         if (state is EntriesLoading) {
@@ -178,19 +163,25 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  padding: EdgeInsets.fromLTRB(horizontalPad, 6, horizontalPad, 8),
                   child: Column(
                     children: [
                       // Search bar
                       TextField(
                         controller: _searchController,
                         onChanged: _onSearchChanged,
+                        style: TextStyle(fontSize: isCompact ? 13 : 14),
                         decoration: InputDecoration(
                           hintText: 'Поиск по сервисам, логинам, тегам...',
-                          prefixIcon: const Icon(Icons.search),
+                          hintStyle: TextStyle(fontSize: isCompact ? 13 : 14),
+                          prefixIcon: Icon(Icons.search, size: isCompact ? 20 : 22),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: isCompact ? 11 : 14,
+                          ),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear),
+                                  icon: const Icon(Icons.clear, size: 18),
                                   onPressed: () {
                                     _searchController.clear();
                                     _onSearchChanged('');
@@ -199,7 +190,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               : null,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: isCompact ? 8 : 12),
+
                       // Bento Grid
                       BentoGrid(
                         totalAccounts: state.totalAccounts,
@@ -209,21 +201,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         selectedCategory: _selectedCategory,
                         onCategorySelected: _onCategoryChanged,
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: isCompact ? 8 : 12),
+
                       // Category Filter Chips
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            _filterChip(EntryCategory.all, 'Все (${state.totalAll})'),
-                            const SizedBox(width: 8),
-                            _filterChip(EntryCategory.account, 'Аккаунты (${state.totalAccounts})'),
-                            const SizedBox(width: 8),
-                            _filterChip(EntryCategory.token, 'API Ключи (${state.totalTokens})'),
-                            const SizedBox(width: 8),
-                            _filterChip(EntryCategory.secret, 'Секреты (${state.totalSecrets})'),
-                            const SizedBox(width: 8),
-                            _filterChip(EntryCategory.note, 'Заметки (${state.totalNotes})'),
+                            _filterChip(EntryCategory.all, 'Все (${state.totalAll})', isCompact),
+                            const SizedBox(width: 6),
+                            _filterChip(EntryCategory.account, 'Аккаунты (${state.totalAccounts})', isCompact),
+                            const SizedBox(width: 6),
+                            _filterChip(EntryCategory.token, 'API (${state.totalTokens})', isCompact),
+                            const SizedBox(width: 6),
+                            _filterChip(EntryCategory.secret, 'Секреты (${state.totalSecrets})', isCompact),
+                            const SizedBox(width: 6),
+                            _filterChip(EntryCategory.note, 'Заметки (${state.totalNotes})', isCompact),
                           ],
                         ),
                       ),
@@ -237,11 +230,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
-                        const SizedBox(height: 12),
+                        Icon(Icons.inbox_outlined, size: 52, color: Colors.grey[500]),
+                        const SizedBox(height: 10),
                         Text(
                           'Записей не найдено',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+                          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                         ),
                       ],
                     ),
@@ -249,12 +242,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                  padding: EdgeInsets.fromLTRB(horizontalPad, 2, horizontalPad, 80),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final entry = state.entries[index];
-                        return _buildEntryCard(context, entry);
+                        return _buildEntryCard(context, entry, isCompact: isCompact);
                       },
                       childCount: state.entries.length,
                     ),
@@ -284,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
                         TextField(
@@ -304,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 : null,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         BentoGrid(
                           totalAccounts: state.totalAccounts,
                           totalTokens: state.totalTokens,
@@ -329,6 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               return _buildEntryCard(
                                 context,
                                 entry,
+                                isCompact: false,
                                 isSelected: isSelected,
                                 onSelect: () {
                                   setState(() => _selectedEntryForDesktop = entry);
@@ -347,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? Center(
                       child: Text(
                         'Выберите запись для просмотра',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 15),
                       ),
                     )
                   : EntryDetailScreen(entry: _selectedEntryForDesktop!),
@@ -361,6 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildEntryCard(
     BuildContext context,
     VaultEntry entry, {
+    required bool isCompact,
     bool isSelected = false,
     VoidCallback? onSelect,
   }) {
@@ -389,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: isCompact ? 7 : 9),
       child: InkWell(
         onTap: () {
           if (onSelect != null) {
@@ -401,48 +396,55 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 12 : 14,
+            vertical: isCompact ? 10 : 12,
+          ),
           decoration: BoxDecoration(
             color: isSelected
                 ? color.withOpacity(0.12)
-                : (isDark ? const Color(0xFF1E293B) : Colors.white),
-            borderRadius: BorderRadius.circular(16),
+                : (isDark ? AppTheme.cardDark : Colors.white),
+            borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
             border: Border.all(
               color: isSelected
                   ? color
-                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-              width: isSelected ? 2 : 1,
+                  : (isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0)),
+              width: isSelected ? 1.8 : 1.0,
             ),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(isCompact ? 7 : 9),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(isCompact ? 10 : 12),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: isCompact ? 17 : 20),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: isCompact ? 10 : 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       entry.title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: isCompact ? 14 : 15,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppTheme.textPrimaryDark : Colors.black87,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       entry.subtitle,
                       style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        fontSize: isCompact ? 11 : 12,
+                        color: isDark ? AppTheme.textSecondaryDark : Colors.grey[600],
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -450,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+              const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
             ],
           ),
         ),
@@ -458,11 +460,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _filterChip(EntryCategory cat, String label) {
+  Widget _filterChip(EntryCategory cat, String label, bool isCompact) {
     final isSelected = _selectedCategory == cat;
     return ChoiceChip(
       selected: isSelected,
-      label: Text(label),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: isCompact ? 11 : 12,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 8, vertical: isCompact ? 2 : 4),
       onSelected: (_) => _onCategoryChanged(cat),
     );
   }

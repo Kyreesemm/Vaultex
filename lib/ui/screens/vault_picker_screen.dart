@@ -16,24 +16,30 @@ class VaultPickerScreen extends StatelessWidget {
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.15),
+                color: AppTheme.primaryColor.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
               ),
-              child: const Icon(Icons.shield, color: AppTheme.primaryColor, size: 24),
+              child: const Icon(Icons.shield_rounded, color: AppTheme.primaryLight, size: 22),
             ),
             const SizedBox(width: 12),
             const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Vaultex',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  'VAULTEX',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.5,
+                    color: AppTheme.primaryLight,
+                  ),
                 ),
                 Text(
-                  'Криптографическое хранилище',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  'Защищенное хранилище (AES-256-GCM)',
+                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryDark),
                 ),
               ],
             ),
@@ -173,10 +179,10 @@ class VaultPickerScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            color: isDark ? AppTheme.cardDark : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(

@@ -116,13 +116,21 @@ class _UnlockScreenState extends State<UnlockScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.12),
+                        color: AppTheme.primaryColor.withOpacity(0.14),
                         shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.2),
+                            blurRadius: 24,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                       child: const Icon(
-                        Icons.lock_outline,
-                        color: AppTheme.primaryColor,
-                        size: 56,
+                        Icons.lock_outline_rounded,
+                        color: AppTheme.primaryLight,
+                        size: 52,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -199,7 +207,7 @@ class _UnlockScreenState extends State<UnlockScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        color: isDark ? AppTheme.cardDark : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Row(

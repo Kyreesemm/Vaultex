@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/security_service.dart';
+import '../../core/theme.dart';
 import '../../data/repositories/vault_repository.dart';
 import '../../src/rust/totp.dart';
 
@@ -94,10 +95,10 @@ class _TotpFieldTileState extends State<TotpFieldTile> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        color: isDark ? AppTheme.cardDark : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0),
         ),
       ),
       child: Row(

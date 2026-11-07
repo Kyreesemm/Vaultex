@@ -1,25 +1,35 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const primaryColor = Color(0xFF6366F1); // Indigo accent
-  static const primaryLight = Color(0xFF818CF8);
-  static const primaryDark = Color(0xFF4F46E5);
+  // Brand color: Obsidian Amethyst Purple
+  static const primaryColor = Color(0xFF7C3AED); // Vibrant amethyst
+  static const primaryLight = Color(0xFFA78BFA); // Soft amethyst light
+  static const primaryDark = Color(0xFF6D28D9);  // Deep royal amethyst
+  static const primaryGlow = Color(0xFF8B5CF6);
 
-  static const surfaceDark = Color(0xFF0F172A); // Slate 900
-  static const cardDark = Color(0xFF1E293B); // Slate 800
-  static const cardBorderDark = Color(0xFF334155); // Slate 700
-  static const backgroundDark = Color(0xFF090D16);
+  // Background and Surfaces: Pure neutral dark graphite-black (no blue/slate tints)
+  static const backgroundDark = Color(0xFF0D0D11); // Deep near-black graphite
+  static const surfaceDark = Color(0xFF141419);    // Top header & dialog background
+  static const cardDark = Color(0xFF1A1A22);       // Cards and containers
+  static const cardElevatedDark = Color(0xFF22222C); // Hover/elevated elements
+  static const cardBorderDark = Color(0xFF2B2B36); // Subtle neutral border
 
+  // Text Colors
+  static const textPrimaryDark = Color(0xFFEDEDF2);
+  static const textSecondaryDark = Color(0xFF9898A6);
+  static const textMutedDark = Color(0xFF646472);
+
+  // Light theme fallbacks
   static const surfaceLight = Color(0xFFF8FAFC);
   static const cardLight = Color(0xFFFFFFFF);
   static const cardBorderLight = Color(0xFFE2E8F0);
   static const backgroundLight = Color(0xFFF1F5F9);
 
   // Category Colors
-  static const accountColor = Color(0xFF3B82F6); // Blue
-  static const tokenColor = Color(0xFF10B981); // Emerald
-  static const secretColor = Color(0xFFF59E0B); // Amber
-  static const noteColor = Color(0xFF8B5CF6); // Purple
+  static const accountColor = Color(0xFF38BDF8); // Sky blue
+  static const tokenColor = Color(0xFF34D399);   // Emerald mint
+  static const secretColor = Color(0xFFFBBF24);  // Amber gold
+  static const noteColor = Color(0xFFA78BFA);    // Amethyst purple
 
   static ThemeData get darkTheme {
     return ThemeData(
@@ -31,7 +41,7 @@ class AppTheme {
         secondary: primaryLight,
         surface: surfaceDark,
         surfaceContainerHighest: cardDark,
-        onSurface: Colors.white,
+        onSurface: textPrimaryDark,
       ),
       cardTheme: CardTheme(
         color: cardDark,

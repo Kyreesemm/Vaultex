@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/security_service.dart';
+import '../../core/theme.dart';
 
 class SecretFieldTile extends StatefulWidget {
   final String label;
@@ -84,10 +85,10 @@ class _SecretFieldTileState extends State<SecretFieldTile> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        color: isDark ? AppTheme.cardDark : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? AppTheme.cardBorderDark : const Color(0xFFE2E8F0),
         ),
       ),
       child: Column(
