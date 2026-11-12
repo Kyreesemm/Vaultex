@@ -1,8 +1,6 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../core/theme.dart';
 
-class VaultexHeaderBar extends StatefulWidget {
+class VaultexHeaderBar extends StatelessWidget {
   final String vaultName;
   final String? vaultPath;
   final VoidCallback onOpenGenerator;
@@ -19,248 +17,152 @@ class VaultexHeaderBar extends StatefulWidget {
   });
 
   @override
-  State<VaultexHeaderBar> createState() => _VaultexHeaderBarState();
-}
-
-class _VaultexHeaderBarState extends State<VaultexHeaderBar>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _animCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    // Slow, smooth ambient shimmer across purple gradients
-    _animCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 6),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _animCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 500;
 
-    return Container(
-      margin: EdgeInsets.fromLTRB(
-        isCompact ? 12 : 16,
-        isCompact ? 4 : 8,
-        isCompact ? 12 : 16,
-        8,
-      ),
+    return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 10 : 14,
-        vertical: isCompact ? 6 : 8,
-      ),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceDark,
-        borderRadius: BorderRadius.circular(isCompact ? 18 : 22),
-        border: Border.all(
-          color: AppTheme.primaryColor.withOpacity(0.22),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.10),
-            blurRadius: 16,
-            spreadRadius: 1,
-            offset: const Offset(0, 3),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        horizontal: isCompact ? 16 : 20,
+        vertical: isCompact ? 4 : 8,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: Vault indicator pill / badge
-          _buildVaultBadge(context, isCompact),
+          // Left: Wordmark "VAULTEX"
+          _buildWordmark(isCompact),
 
-          // Center: Glowing & Slowly Shimmering "VAULTEX"
-          Expanded(
-            child: Center(
-              child: _buildGlowingWordmark(isCompact),
-            ),
-          ),
+          const Spacer(),
 
-          // Right: Action buttons (Generator, Settings, Lock)
-          _buildActionButtons(isCompact),
+          // Right: Action buttons (Generator, Settings, Manual lock)
+          _buildActionButtons(context, isCompact),
         ],
       ),
     );
   }
 
-  Widget _buildVaultBadge(BuildContext context, bool isCompact) {
-    if (isCompact) {
-      return Tooltip(
-        message: '${widget.vaultName}\nAES-256-GCM • Argon2id',
-        child: Container(
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            color: AppTheme.cardElevatedDark,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppTheme.primaryColor.withOpacity(0.18),
+  Widget _buildWordmark(bool isCompact) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Colors.white,
+              Color(0xFFE9D5FF), // Soft amethyst lilac highlight
+              Color(0xFFA78BFA), // Lavender amethyst
+            ],
+            stops: [0.0, 0.7, 1.0],
+          ).createShader(bounds),
+          blendMode: BlendMode.srcIn,
+          child: Text(
+            'VAULTEX',
+            style: TextStyle(
+              fontSize: isCompact ? 20 : 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: isCompact ? 3.5 : 4.5,
+              color: Colors.white,
             ),
           ),
-          child: const Icon(
-            Icons.shield_rounded,
-            color: AppTheme.primaryLight,
-            size: 18,
-          ),
         ),
-      );
-    }
-
-    return Tooltip(
-      message: widget.vaultPath != null
-          ? 'Хранилище: ${widget.vaultPath}\nШифрование: AES-256-GCM'
-          : 'Хранилище активно',
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppTheme.cardElevatedDark,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppTheme.primaryColor.withOpacity(0.18),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.shield_rounded,
-              color: AppTheme.primaryLight,
-              size: 16,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                widget.vaultName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimaryDark,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
-  Widget _buildGlowingWordmark(bool isCompact) {
-    return AnimatedBuilder(
-      animation: _animCtrl,
-      builder: (context, _) {
-        final val = _animCtrl.value;
-
-        // Smoothly shifting gradient stops with Obsidian amethyst purple shades
-        final gradient = LinearGradient(
-          begin: Alignment(-1.5 + val * 1.5, -0.5),
-          end: Alignment(1.5 + val * 1.5, 0.5),
-          colors: const [
-            Color(0xFF6D28D9), // Deep Obsidian amethyst
-            Color(0xFF8B5CF6), // Royal purple
-            Color(0xFFA78BFA), // Lavender lilac
-            Color(0xFFC4B5FD), // Light amethyst highlight
-            Color(0xFF9333EA), // Vivid purple
-            Color(0xFF7C3AED), // Main brand amethyst
-          ],
-          stops: const [0.0, 0.25, 0.45, 0.65, 0.85, 1.0],
-        );
-
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            // Ambient soft glowing text shadow layer
-            Text(
-              'VAULTEX',
-              style: TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: isCompact ? 16 : 19,
-                fontWeight: FontWeight.w900,
-                letterSpacing: isCompact ? 3.5 : 4.5,
-                color: Colors.transparent,
-                shadows: [
-                  Shadow(
-                    color: AppTheme.primaryLight.withOpacity(0.55 + 0.25 * sin(val * pi)),
-                    blurRadius: 14 + 4 * sin(val * pi),
-                  ),
-                  Shadow(
-                    color: AppTheme.primaryDark.withOpacity(0.7),
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-            ),
-
-            // Foreground animated gradient text layer
-            ShaderMask(
-              shaderCallback: (bounds) => gradient.createShader(bounds),
-              blendMode: BlendMode.srcIn,
-              child: Text(
-                'VAULTEX',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: isCompact ? 16 : 19,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: isCompact ? 3.5 : 4.5,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildActionButtons(bool isCompact) {
-    final iconSize = isCompact ? 18.0 : 20.0;
-    final padding = isCompact ? const EdgeInsets.all(6) : const EdgeInsets.all(8);
+  Widget _buildActionButtons(BuildContext context, bool isCompact) {
+    final iconSize = isCompact ? 21.0 : 22.0;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          constraints: isCompact ? const BoxConstraints(minWidth: 32, minHeight: 32) : null,
-          padding: padding,
-          icon: Icon(Icons.vpn_key_outlined, size: iconSize),
+        // 1. Password Generator
+        _HeaderIconButton(
+          icon: Icons.vpn_key_outlined,
+          size: iconSize,
           tooltip: 'Генератор паролей',
-          onPressed: widget.onOpenGenerator,
+          color: Colors.white,
+          onPressed: onOpenGenerator,
         ),
-        IconButton(
-          constraints: isCompact ? const BoxConstraints(minWidth: 32, minHeight: 32) : null,
-          padding: padding,
-          icon: Icon(Icons.settings_outlined, size: iconSize),
+        const SizedBox(width: 4),
+
+        // 2. Settings
+        _HeaderIconButton(
+          icon: Icons.settings_outlined,
+          size: iconSize,
           tooltip: 'Настройки',
-          onPressed: widget.onOpenSettings,
+          color: Colors.white,
+          onPressed: onOpenSettings,
         ),
-        IconButton(
-          constraints: isCompact ? const BoxConstraints(minWidth: 32, minHeight: 32) : null,
-          padding: padding,
-          icon: Icon(
-            Icons.lock_outline,
-            size: iconSize,
-            color: Colors.amber.shade400,
-          ),
-          tooltip: 'Заблокировать хранилище',
-          onPressed: widget.onLockVault,
+        const SizedBox(width: 4),
+
+        // 3. Manual Lock (White color, not yellow)
+        _HeaderIconButton(
+          icon: Icons.lock_outline,
+          size: iconSize,
+          tooltip: 'Ручная блокировка хранилища',
+          color: Colors.white,
+          onPressed: onLockVault,
         ),
       ],
+    );
+  }
+}
+
+class _HeaderIconButton extends StatefulWidget {
+  final IconData icon;
+  final double size;
+  final String tooltip;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.size,
+    required this.tooltip,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  State<_HeaderIconButton> createState() => _HeaderIconButtonState();
+}
+
+class _HeaderIconButtonState extends State<_HeaderIconButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: widget.tooltip,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onPressed();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.88 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeInOut,
+          child: Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              widget.icon,
+              size: widget.size,
+              color: widget.color,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

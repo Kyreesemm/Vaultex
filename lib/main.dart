@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/security_service.dart';
+import 'core/settings_service.dart';
 import 'core/theme.dart';
 import 'data/repositories/vault_repository.dart';
 import 'logic/blocs/entries_bloc.dart';
@@ -62,6 +63,9 @@ class _VaultexAppState extends State<VaultexApp> with WidgetsBindingObserver {
         _vaultBloc.add(LockVaultEvent());
       }
     });
+
+    // Initialize user settings
+    SettingsService().init();
   }
 
   @override
