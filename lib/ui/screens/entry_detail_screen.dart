@@ -414,7 +414,11 @@ class EntryDetailScreen extends StatelessWidget {
             child: const Text('Отмена'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              side: BorderSide.none,
+            ),
             onPressed: () {
               Navigator.pop(ctx);
               context.read<EntriesBloc>().add(DeleteEntryEvent(entry.id));

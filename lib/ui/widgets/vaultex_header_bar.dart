@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'vaultex_wordmark.dart';
 
 class VaultexHeaderBar extends StatelessWidget {
   final String vaultName;
@@ -30,7 +31,10 @@ class VaultexHeaderBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Left: Wordmark "VAULTEX"
-          _buildWordmark(isCompact),
+          VaultexWordmark(
+            fontSize: isCompact ? 20 : 22,
+            letterSpacing: isCompact ? 3.5 : 4.5,
+          ),
 
           const Spacer(),
 
@@ -38,35 +42,6 @@ class VaultexHeaderBar extends StatelessWidget {
           _buildActionButtons(context, isCompact),
         ],
       ),
-    );
-  }
-
-  Widget _buildWordmark(bool isCompact) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [
-              Colors.white,
-              Color(0xFFE9D5FF), // Soft amethyst lilac highlight
-              Color(0xFFA78BFA), // Lavender amethyst
-            ],
-            stops: [0.0, 0.7, 1.0],
-          ).createShader(bounds),
-          blendMode: BlendMode.srcIn,
-          child: Text(
-            'VAULTEX',
-            style: TextStyle(
-              fontSize: isCompact ? 20 : 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: isCompact ? 3.5 : 4.5,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

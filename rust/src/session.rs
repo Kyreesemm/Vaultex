@@ -111,7 +111,7 @@ impl SessionManager {
 
         let safe_name: String = name
             .chars()
-            .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+            .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' || c == ' ' { c } else { '_' })
             .collect();
         let safe_name = if safe_name.trim().is_empty() {
             "vault".to_string()

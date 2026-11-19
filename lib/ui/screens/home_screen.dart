@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/format_utils.dart';
 import '../../core/theme.dart';
 import '../../data/models/vault_entry.dart';
 import '../../logic/blocs/entries_bloc.dart';
@@ -97,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: SafeArea(
               bottom: false,
               child: VaultexHeaderBar(
-                vaultName: vaultInfo.name ?? 'Хранилище',
+                vaultName: formatVaultDisplayName(vaultInfo.name ?? 'Хранилище'),
                 vaultPath: vaultInfo.path,
                 onOpenGenerator: () {
                   showDialog(
@@ -111,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     MaterialPageRoute(
                       builder: (_) => SettingsScreen(
                         currentVaultPath: vaultInfo.path ?? '',
-                        currentVaultName: vaultInfo.name ?? 'Хранилище',
+                        currentVaultName: formatVaultDisplayName(vaultInfo.name ?? 'Хранилище'),
                       ),
                     ),
                   );

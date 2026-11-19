@@ -47,14 +47,15 @@ class _PasswordGeneratorDialogState extends State<PasswordGeneratorDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AlertDialog(
+      backgroundColor: AppTheme.surfaceDark,
       title: const Row(
         children: [
-          Icon(Icons.vpn_key_outlined),
+          Icon(Icons.vpn_key_outlined, color: AppTheme.primaryLight),
           SizedBox(width: 10),
-          Text('Генератор паролей'),
+          Text('Генератор паролей', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ],
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -179,12 +180,18 @@ class _PasswordGeneratorDialogState extends State<PasswordGeneratorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Закрыть'),
+          child: const Text('Закрыть', style: TextStyle(color: AppTheme.textSecondaryDark)),
         ),
         if (widget.onSelectPassword != null)
           FilledButton.icon(
-            icon: const Icon(Icons.check),
-            label: const Text('Использовать'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.check, size: 18, color: Colors.white),
+            label: const Text('Использовать', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             onPressed: () {
               widget.onSelectPassword!(_generated);
               Navigator.pop(context);

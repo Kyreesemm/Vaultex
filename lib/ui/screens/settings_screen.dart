@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/format_utils.dart';
 import '../../core/security_service.dart';
 import '../../core/settings_service.dart';
 import '../../core/sync/gdrive_sync_service.dart';
@@ -334,6 +335,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: AppTheme.cardBorderDark),
                                 padding: const EdgeInsets.symmetric(vertical: 11),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -343,10 +346,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                     )
                                   : const Icon(Icons.cloud_upload_outlined, size: 18),
-                              label: const Text('Загрузить', style: TextStyle(fontSize: 13)),
+                              label: const Text('Загрузить', style: TextStyle(fontSize: 13, color: Colors.white)),
                               onPressed: _gdriveSyncing ? null : () => _uploadToDrive(context),
                             ),
                           ),
@@ -354,13 +357,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: AppTheme.cardBorderDark),
                                 padding: const EdgeInsets.symmetric(vertical: 11),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               icon: const Icon(Icons.cloud_download_outlined, size: 18),
-                              label: const Text('Файлы в Drive', style: TextStyle(fontSize: 13)),
+                              label: const Text('Файлы в Drive', style: TextStyle(fontSize: 13, color: Colors.white)),
                               onPressed: () => _listDriveFiles(context),
                             ),
                           ),
@@ -388,7 +393,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              widget.currentVaultName,
+                              formatVaultDisplayName(widget.currentVaultName),
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                             ),
                           ),

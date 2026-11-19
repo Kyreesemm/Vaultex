@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vaultex/core/format_utils.dart';
 import 'package:vaultex/core/settings_service.dart';
 import 'package:vaultex/data/models/vault_entry.dart';
 import 'package:vaultex/ui/widgets/bento_grid.dart';
+import 'package:vaultex/ui/widgets/vaultex_wordmark.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -125,5 +127,25 @@ void main() {
 
     expect(find.text('Всего записей в сейфе'), findsNothing);
     expect(find.text('Аккаунты'), findsNothing);
+  });
+
+  test('formatVaultDisplayName formats extensions and underscores cleanly', () {
+    expect(formatVaultDisplayName('Test_Vault.vex'), 'Test Vault');
+    expect(formatVaultDisplayName('Test_Vault'), 'Test Vault');
+    expect(formatVaultDisplayName('My_Secret_Vault.vault'), 'My Secret Vault');
+    expect(formatVaultDisplayName('Personal'), 'Personal');
+    expect(formatVaultDisplayName(''), 'Хранилище');
+  });
+
+  testWidgets('VaultexWordmark renders wordmark text', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: VaultexWordmark(),
+        ),
+      ),
+    );
+
+    expect(find.text('VAULTEX'), findsWidgets);
   });
 }

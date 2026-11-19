@@ -191,8 +191,17 @@ class _EntryEditScreenState extends State<EntryEditScreen> with SingleTickerProv
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: FilledButton.icon(
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Сохранить'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.check, size: 18, color: Colors.white),
+              label: const Text(
+                'Сохранить',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
               onPressed: _save,
             ),
           ),
