@@ -305,6 +305,8 @@ impl SessionManager {
         let mut guard = SESSION.lock().unwrap();
         let session = guard.as_mut().ok_or("Хранилище заблокировано")?;
 
+        session.store.ensure_writable().map_err(|e| e.to_string())?;
+
         let serialized = serde_json::to_vec(&payload)
             .map_err(|e| format!("Ошибка сериализации данных: {}", e))?;
 

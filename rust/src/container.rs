@@ -1,19 +1,28 @@
-use std::collections::BTreeMap;
 use rand_core::{OsRng, RngCore};
+use std::{collections::BTreeMap, path::Path};
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::crypto::{
-    derive_key_with_params, KdfParams, KeyEnvelope, VaultCrypto, VaultError, VaultKey,
-    KEY_LENGTH, NONCE_LENGTH, SALT_LENGTH,
+    derive_key_with_params, KdfParams, KeyEnvelope, VaultCrypto, VaultError, VaultKey, KEY_LENGTH,
+    NONCE_LENGTH, SALT_LENGTH,
 };
 use crate::model::RecordKind;
 
 pub const MAGIC: &[u8; 8] = b"VAULTEX\0";
 pub const RECORD_MAGIC: &[u8; 4] = b"VRB1";
-pub const FORMAT_VERSION: u16 = 3;
+const FORMAT_VERSION_3: u16 = 3;
+const CURRENT_VERSION: ContainerVersion = ContainerVersion::V3;
+pub const LEGACY_FORMAT_VERSION_1: u16 = 1;
+pub const LEGACY_FORMAT_VERSION_2: u16 = 2;
 pub const MAX_RECORDS: usize = 1_000_000;
 pub const MAX_BLOCK_SIZE: usize = 256 * 1024 * 1024;
 pub const MAX_VAULT_NAME_LENGTH: usize = 256;
+
+pub fn is_vault_path(path: &Path) -> bool {
+    path.extension().is_some_and(|extension| {
+        extension.eq_ignore_ascii_case("vex") || extension.eq_ignore_ascii_case("vault")
+    })
+}
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct RecordId(pub [u8; 16]);
@@ -21,7 +30,9 @@ pub struct RecordId(pub [u8; 16]);
 impl RecordId {
     pub fn generate() -> Result<Self, VaultError> {
         let mut id = [0u8; 16];
-        OsRng.try_fill_bytes(&mut id).map_err(|_| VaultError::Randomness)?;
+        OsRng
+            .try_fill_bytes(&mut id)
+            .map_err(|_| VaultError::Randomness)?;
         Ok(Self(id))
     }
 
@@ -53,6 +64,36 @@ fn hex_digit(b: u8) -> Option<u8> {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ContainerVersion {
+    V1,
+    V2,
+    V3,
+}
+
+impl ContainerVersion {
+    pub fn from_wire(version: u16) -> Result<Self, VaultError> {
+        match version {
+            LEGACY_FORMAT_VERSION_1 => Ok(Self::V1),
+            LEGACY_FORMAT_VERSION_2 => Ok(Self::V2),
+            FORMAT_VERSION_3 => Ok(Self::V3),
+            _ => Err(VaultError::InvalidEnvelope),
+        }
+    }
+
+    pub fn wire(self) -> u16 {
+        match self {
+            Self::V1 => LEGACY_FORMAT_VERSION_1,
+            Self::V2 => LEGACY_FORMAT_VERSION_2,
+            Self::V3 => FORMAT_VERSION_3,
+        }
+    }
+
+    pub fn is_current(self) -> bool {
+        self == CURRENT_VERSION
+    }
+}
+
 pub struct VaultRecord {
     pub kind: RecordKind,
     pub revision: u64,
@@ -67,6 +108,7 @@ pub struct VaultStore {
     kdf_params: KdfParams,
     salt: [u8; SALT_LENGTH],
     records: BTreeMap<RecordId, VaultRecord>,
+    source_version: ContainerVersion,
 }
 
 impl VaultStore {
@@ -74,8 +116,12 @@ impl VaultStore {
         validate_vault_name(name)?;
         let mut vault_id = [0u8; 16];
         let mut salt = [0u8; SALT_LENGTH];
-        OsRng.try_fill_bytes(&mut vault_id).map_err(|_| VaultError::Randomness)?;
-        OsRng.try_fill_bytes(&mut salt).map_err(|_| VaultError::Randomness)?;
+        OsRng
+            .try_fill_bytes(&mut vault_id)
+            .map_err(|_| VaultError::Randomness)?;
+        OsRng
+            .try_fill_bytes(&mut salt)
+            .map_err(|_| VaultError::Randomness)?;
 
         Ok(Self {
             name: name.to_owned(),
@@ -85,16 +131,15 @@ impl VaultStore {
             kdf_params: KdfParams::default(),
             salt,
             records: BTreeMap::new(),
+            source_version: CURRENT_VERSION,
         })
     }
 
     pub fn unlock(bytes: &[u8], password: &[u8]) -> Result<Self, VaultError> {
         let mut reader = Reader::new(bytes);
         reader.take_exact(MAGIC)?;
-        let version = reader.u16()?;
-        if version != FORMAT_VERSION {
-            return Err(VaultError::InvalidEnvelope);
-        }
+        let version = ContainerVersion::from_wire(reader.u16()?)?;
+        let wire_version = version.wire();
 
         let kdf_params = KdfParams {
             memory_kib: reader.u32()?,
@@ -102,18 +147,15 @@ impl VaultStore {
             parallelism: reader.u32()?,
             output_length: reader.u16()? as usize,
         };
-        if kdf_params.output_length != KEY_LENGTH
-            || kdf_params.memory_kib < 8 * 1024
-            || kdf_params.iterations == 0
-            || kdf_params.parallelism == 0
-        {
-            return Err(VaultError::InvalidEnvelope);
-        }
+        validate_kdf_params(kdf_params)?;
 
         let vault_id = reader.array::<16>()?;
         let salt = reader.array::<SALT_LENGTH>()?;
         let wrapped_nonce = reader.array::<NONCE_LENGTH>()?;
-        let wrapped_ciphertext = reader.bytes(MAX_BLOCK_SIZE)?;
+        let wrapped_ciphertext = reader.bytes(KEY_LENGTH + crate::crypto::AUTH_TAG_LENGTH)?;
+        if wrapped_ciphertext.len() != KEY_LENGTH + crate::crypto::AUTH_TAG_LENGTH {
+            return Err(VaultError::InvalidEnvelope);
+        }
 
         let password_key = derive_key_with_params(password, &salt, kdf_params)?;
         let data_key_bytes = VaultCrypto::decrypt_with_key(
@@ -122,15 +164,15 @@ impl VaultStore {
                 nonce: wrapped_nonce,
                 ciphertext: wrapped_ciphertext.clone(),
             },
-            &header_aad(&vault_id, &salt, kdf_params),
+            &wrap_aad(&vault_id, &salt, kdf_params, wire_version),
         )?;
 
         if data_key_bytes.len() != KEY_LENGTH {
             return Err(VaultError::InvalidEnvelope);
         }
-        let mut raw_data_key = [0u8; KEY_LENGTH];
+        let mut raw_data_key = Zeroizing::new([0u8; KEY_LENGTH]);
         raw_data_key.copy_from_slice(&data_key_bytes);
-        let data_key = VaultKey::from_bytes(raw_data_key);
+        let data_key = VaultKey::from_bytes(*raw_data_key);
 
         let manifest_nonce = reader.array::<NONCE_LENGTH>()?;
         let manifest_ciphertext = reader.bytes(MAX_BLOCK_SIZE)?;
@@ -140,27 +182,45 @@ impl VaultStore {
                 nonce: manifest_nonce,
                 ciphertext: manifest_ciphertext,
             },
-            &manifest_aad(&vault_id),
+            &manifest_aad(&vault_id, wire_version),
         )?;
-        let (name, entries) = parse_manifest(&manifest)?;
+        let (name, entries) = parse_manifest(&manifest, version)?;
 
         let mut blocks = Vec::new();
         while reader.remaining() > 0 {
+            if blocks.len() == entries.len() {
+                return Err(VaultError::InvalidEnvelope);
+            }
             reader.take_exact(RECORD_MAGIC)?;
             let nonce = reader.array::<NONCE_LENGTH>()?;
             let ciphertext = reader.bytes(MAX_BLOCK_SIZE)?;
             blocks.push(KeyEnvelope { nonce, ciphertext });
         }
 
+        if blocks.len() != entries.len() {
+            return Err(VaultError::InvalidEnvelope);
+        }
         let mut records = BTreeMap::new();
         for (id, kind, revision, block_index) in entries {
             let block = blocks.get(block_index).ok_or(VaultError::InvalidEnvelope)?;
             let payload = VaultCrypto::decrypt_with_key(
                 &data_key,
                 block,
-                &record_aad(&vault_id, id, kind, revision),
+                &record_aad(&vault_id, id, kind, revision, wire_version),
             )?;
-            records.insert(id, VaultRecord { kind, revision, payload });
+            if records
+                .insert(
+                    id,
+                    VaultRecord {
+                        kind,
+                        revision,
+                        payload,
+                    },
+                )
+                .is_some()
+            {
+                return Err(VaultError::InvalidEnvelope);
+            }
         }
 
         Ok(Self {
@@ -174,10 +234,13 @@ impl VaultStore {
             kdf_params,
             salt,
             records,
+            source_version: version,
         })
     }
 
     pub fn insert(&mut self, kind: RecordKind, payload: Vec<u8>) -> Result<RecordId, VaultError> {
+        let payload = Zeroizing::new(payload);
+        self.ensure_writable()?;
         if payload.len() > MAX_BLOCK_SIZE - 16 {
             return Err(VaultError::PayloadTooLarge);
         }
@@ -187,7 +250,7 @@ impl VaultStore {
             VaultRecord {
                 kind,
                 revision: 1,
-                payload: Zeroizing::new(payload),
+                payload,
             },
         );
         Ok(id)
@@ -201,7 +264,20 @@ impl VaultStore {
         &self.name
     }
 
+    pub fn format_version(&self) -> ContainerVersion {
+        self.source_version
+    }
+
+    pub fn ensure_writable(&self) -> Result<(), VaultError> {
+        if self.format_version().is_current() {
+            Ok(())
+        } else {
+            Err(VaultError::LegacyReadOnly)
+        }
+    }
+
     pub fn set_name(&mut self, name: &str) -> Result<(), VaultError> {
+        self.ensure_writable()?;
         validate_vault_name(name)?;
         self.name = name.to_string();
         Ok(())
@@ -220,48 +296,87 @@ impl VaultStore {
     }
 
     pub fn update(&mut self, id: RecordId, payload: Vec<u8>) -> Result<(), VaultError> {
+        let payload = Zeroizing::new(payload);
+        self.ensure_writable()?;
         if payload.len() > MAX_BLOCK_SIZE - 16 {
             return Err(VaultError::PayloadTooLarge);
         }
-        let record = self.records.get_mut(&id).ok_or(VaultError::InvalidEnvelope)?;
-        record.revision = record.revision.checked_add(1).ok_or(VaultError::InvalidEnvelope)?;
-        record.payload = Zeroizing::new(payload);
+        let record = self
+            .records
+            .get_mut(&id)
+            .ok_or(VaultError::InvalidEnvelope)?;
+        record.revision = record
+            .revision
+            .checked_add(1)
+            .ok_or(VaultError::InvalidEnvelope)?;
+        record.payload = payload;
         Ok(())
     }
 
     pub fn remove(&mut self, id: RecordId) -> Result<(), VaultError> {
-        self.records.remove(&id).map(|_| ()).ok_or(VaultError::InvalidEnvelope)
+        self.ensure_writable()?;
+        self.records
+            .remove(&id)
+            .map(|_| ())
+            .ok_or(VaultError::InvalidEnvelope)
     }
 
     pub fn change_password(&mut self, new_password: &[u8]) -> Result<(), VaultError> {
+        self.ensure_writable()?;
         let mut new_salt = [0u8; SALT_LENGTH];
-        OsRng.try_fill_bytes(&mut new_salt).map_err(|_| VaultError::Randomness)?;
+        OsRng
+            .try_fill_bytes(&mut new_salt)
+            .map_err(|_| VaultError::Randomness)?;
         self.salt = new_salt;
 
         let password_key = derive_key_with_params(new_password, &self.salt, self.kdf_params)?;
         let wrapped_key = VaultCrypto::encrypt_with_key(
             &password_key,
             self.data_key.as_bytes(),
-            &header_aad(&self.vault_id, &self.salt, self.kdf_params),
+            &header_aad(
+                &self.vault_id,
+                &self.salt,
+                self.kdf_params,
+                FORMAT_VERSION_3,
+            ),
         )?;
         self.wrapped_key = Some(wrapped_key);
         Ok(())
     }
 
     pub fn commit_with_password(&mut self, password: &[u8]) -> Result<Vec<u8>, VaultError> {
+        self.ensure_writable()?;
         let password_key = derive_key_with_params(password, &self.salt, self.kdf_params)?;
         let wrapped_key = VaultCrypto::encrypt_with_key(
             &password_key,
             self.data_key.as_bytes(),
-            &header_aad(&self.vault_id, &self.salt, self.kdf_params),
+            &header_aad(
+                &self.vault_id,
+                &self.salt,
+                self.kdf_params,
+                FORMAT_VERSION_3,
+            ),
         )?;
         self.wrapped_key = Some(wrapped_key.clone());
         self.commit_with_wrapped_key(&wrapped_key)
     }
 
     pub fn commit_unlocked(&self) -> Result<Vec<u8>, VaultError> {
-        let wrapped_key = self.wrapped_key.as_ref().ok_or(VaultError::MissingWrappedKey)?;
+        self.ensure_writable()?;
+        let wrapped_key = self
+            .wrapped_key
+            .as_ref()
+            .ok_or(VaultError::MissingWrappedKey)?;
         self.commit_with_wrapped_key(wrapped_key)
+    }
+
+    /// Создаёт зашифрованную копию в текущем формате, сохраняя ID и содержимое записей.
+    /// Вызывающий код выбирает отдельный путь для записи копии.
+    pub fn convert_to_current(self, name: &str, password: &[u8]) -> Result<Vec<u8>, VaultError> {
+        let mut target = Self::create_named(name)?;
+        target.vault_id = self.vault_id;
+        target.records = self.records;
+        target.commit_with_password(password)
     }
 
     pub fn lock(mut self) {
@@ -280,7 +395,7 @@ impl VaultStore {
 
         let mut blocks = Vec::with_capacity(self.records.len());
         let mut manifest = Writer::new();
-        manifest.u16(FORMAT_VERSION);
+        manifest.u16(FORMAT_VERSION_3);
         manifest.string(&self.name, MAX_VAULT_NAME_LENGTH)?;
         manifest.u32(self.records.len() as u32);
 
@@ -288,7 +403,13 @@ impl VaultStore {
             let block = VaultCrypto::encrypt_with_key(
                 &self.data_key,
                 &record.payload,
-                &record_aad(&self.vault_id, *id, record.kind, record.revision),
+                &record_aad(
+                    &self.vault_id,
+                    *id,
+                    record.kind,
+                    record.revision,
+                    FORMAT_VERSION_3,
+                ),
             )?;
             manifest.array(&id.0);
             manifest.u8(record.kind as u8);
@@ -300,12 +421,12 @@ impl VaultStore {
         let manifest_block = VaultCrypto::encrypt_with_key(
             &self.data_key,
             &manifest.finish(),
-            &manifest_aad(&self.vault_id),
+            &manifest_aad(&self.vault_id, FORMAT_VERSION_3),
         )?;
 
         let mut output = Writer::new();
         output.array(MAGIC);
-        output.u16(FORMAT_VERSION);
+        output.u16(FORMAT_VERSION_3);
         output.u32(self.kdf_params.memory_kib);
         output.u32(self.kdf_params.iterations);
         output.u32(self.kdf_params.parallelism);
@@ -327,10 +448,39 @@ impl VaultStore {
     }
 }
 
-fn header_aad(vault_id: &[u8; 16], salt: &[u8; SALT_LENGTH], params: KdfParams) -> Vec<u8> {
+fn validate_kdf_params(params: KdfParams) -> Result<(), VaultError> {
+    if params.output_length != KEY_LENGTH
+        || params.memory_kib < 8 * 1024
+        || params.memory_kib > 256 * 1024
+        || !(1..=10).contains(&params.iterations)
+        || !(1..=16).contains(&params.parallelism)
+    {
+        return Err(VaultError::InvalidEnvelope);
+    }
+    Ok(())
+}
+
+fn wrap_aad(
+    vault_id: &[u8; 16],
+    salt: &[u8; SALT_LENGTH],
+    params: KdfParams,
+    version: u16,
+) -> Vec<u8> {
+    if version == LEGACY_FORMAT_VERSION_1 {
+        return aad(b"wrap", vault_id, None);
+    }
+    header_aad(vault_id, salt, params, version)
+}
+
+fn header_aad(
+    vault_id: &[u8; 16],
+    salt: &[u8; SALT_LENGTH],
+    params: KdfParams,
+    version: u16,
+) -> Vec<u8> {
     let mut result = Vec::with_capacity(8 + 2 + 4 + 4 + 4 + 2 + 16 + SALT_LENGTH);
     result.extend_from_slice(MAGIC);
-    result.extend_from_slice(&FORMAT_VERSION.to_le_bytes());
+    result.extend_from_slice(&version.to_le_bytes());
     result.extend_from_slice(&params.memory_kib.to_le_bytes());
     result.extend_from_slice(&params.iterations.to_le_bytes());
     result.extend_from_slice(&params.parallelism.to_le_bytes());
@@ -340,37 +490,59 @@ fn header_aad(vault_id: &[u8; 16], salt: &[u8; SALT_LENGTH], params: KdfParams) 
     result
 }
 
-fn manifest_aad(vault_id: &[u8; 16]) -> Vec<u8> {
-    aad(b"manifest", vault_id, FORMAT_VERSION)
+fn manifest_aad(vault_id: &[u8; 16], version: u16) -> Vec<u8> {
+    aad(
+        b"manifest",
+        vault_id,
+        (version != LEGACY_FORMAT_VERSION_1).then_some(version),
+    )
 }
 
-fn record_aad(vault_id: &[u8; 16], id: RecordId, kind: RecordKind, revision: u64) -> Vec<u8> {
-    let mut result = aad(b"record", vault_id, FORMAT_VERSION);
+fn record_aad(
+    vault_id: &[u8; 16],
+    id: RecordId,
+    kind: RecordKind,
+    revision: u64,
+    version: u16,
+) -> Vec<u8> {
+    let mut result = aad(
+        b"record",
+        vault_id,
+        (version != LEGACY_FORMAT_VERSION_1).then_some(version),
+    );
     result.extend_from_slice(&id.0);
     result.push(kind as u8);
     result.extend_from_slice(&revision.to_le_bytes());
     result
 }
 
-fn aad(domain: &[u8], vault_id: &[u8; 16], version: u16) -> Vec<u8> {
+fn aad(domain: &[u8], vault_id: &[u8; 16], version: Option<u16>) -> Vec<u8> {
     let mut result = Vec::with_capacity(domain.len() + vault_id.len() + 3);
     result.extend_from_slice(b"vaultex-storage-v1\0");
     result.extend_from_slice(domain);
     result.push(0);
-    result.extend_from_slice(&version.to_le_bytes());
+    if let Some(version) = version {
+        result.extend_from_slice(&version.to_le_bytes());
+    }
     result.extend_from_slice(vault_id);
     result
 }
 
 fn parse_manifest(
     bytes: &[u8],
+    version: ContainerVersion,
 ) -> Result<(String, Vec<(RecordId, RecordKind, u64, usize)>), VaultError> {
     let mut reader = Reader::new(bytes);
-    if reader.u16()? != FORMAT_VERSION {
+    if reader.u16()? != version.wire() {
         return Err(VaultError::InvalidEnvelope);
     }
-    let name = reader.string(MAX_VAULT_NAME_LENGTH)?;
-    validate_vault_name(&name)?;
+    let name = if version == ContainerVersion::V3 {
+        let name = reader.string(MAX_VAULT_NAME_LENGTH)?;
+        validate_vault_name(&name)?;
+        name
+    } else {
+        "Хранилище".to_string()
+    };
     let count = reader.u32()? as usize;
     if count > MAX_RECORDS {
         return Err(VaultError::InvalidEnvelope);
@@ -379,6 +551,9 @@ fn parse_manifest(
     for _ in 0..count {
         let id = RecordId(reader.array::<16>()?);
         let kind = RecordKind::try_from(reader.u8()?)?;
+        if matches!(version, ContainerVersion::V1 | ContainerVersion::V2) && (kind as u8) > 3 {
+            return Err(VaultError::InvalidEnvelope);
+        }
         let revision = reader.u64()?;
         let block_index = reader.u32()? as usize;
         entries.push((id, kind, revision, block_index));
@@ -475,7 +650,10 @@ impl<'a> Reader<'a> {
     }
 
     fn slice(&mut self, length: usize) -> Result<&'a [u8], VaultError> {
-        let end = self.offset.checked_add(length).ok_or(VaultError::InvalidEnvelope)?;
+        let end = self
+            .offset
+            .checked_add(length)
+            .ok_or(VaultError::InvalidEnvelope)?;
         if end > self.bytes.len() {
             return Err(VaultError::InvalidEnvelope);
         }
@@ -529,11 +707,117 @@ impl<'a> Reader<'a> {
 mod tests {
     use super::*;
 
+    const FIXTURE_PASSWORD: &[u8] = b"fixture-password";
+    const FIXTURES: [(ContainerVersion, &[u8]); 3] = [
+        (
+            ContainerVersion::V1,
+            include_bytes!("../tests/fixtures/container-v1.vault"),
+        ),
+        (
+            ContainerVersion::V2,
+            include_bytes!("../tests/fixtures/container-v2.vault"),
+        ),
+        (
+            ContainerVersion::V3,
+            include_bytes!("../tests/fixtures/container-v3.vault"),
+        ),
+    ];
+
+    #[test]
+    fn historical_containers_open_and_convert_without_data_loss() {
+        use crate::persistence::{PersistenceError, VaultFile};
+        let dir = tempfile::tempdir().unwrap();
+        for (version, bytes) in FIXTURES {
+            let extension = if version == ContainerVersion::V2 {
+                "vex"
+            } else {
+                "vault"
+            };
+            let path = dir
+                .path()
+                .join(format!("historical-{}.{extension}", version.wire()));
+            std::fs::write(&path, bytes).unwrap();
+            let (mut store, _) = VaultFile::load(&path, FIXTURE_PASSWORD).unwrap();
+            assert_eq!(store.format_version(), version);
+            assert_eq!(store.record_count(), 2);
+            if version == ContainerVersion::V3 {
+                assert_eq!(store.name(), "Unnamed vault");
+            } else {
+                assert_eq!(store.name(), "Хранилище");
+                assert!(matches!(
+                    VaultFile::save_unlocked(&path, &store),
+                    Err(PersistenceError::Vault(VaultError::LegacyReadOnly))
+                ));
+                assert!(matches!(
+                    store.change_password(b"new"),
+                    Err(VaultError::LegacyReadOnly)
+                ));
+                assert!(matches!(
+                    store.insert(RecordKind::Note, vec![]),
+                    Err(VaultError::LegacyReadOnly)
+                ));
+            }
+            let vault_id = store.vault_id_hex();
+            let records: Vec<_> = store
+                .list()
+                .map(|(id, record)| (id, record.kind, record.revision))
+                .collect();
+            let converted = store
+                .convert_to_current("Imported", FIXTURE_PASSWORD)
+                .unwrap();
+            let reopened = VaultStore::unlock(&converted, FIXTURE_PASSWORD).unwrap();
+            assert_eq!(reopened.format_version(), ContainerVersion::V3);
+            assert_eq!(reopened.name(), "Imported");
+            assert_eq!(reopened.vault_id_hex(), vault_id);
+            assert_eq!(reopened.record_count(), records.len());
+            for (id, kind, revision) in records {
+                let record = reopened.get(id).unwrap();
+                assert_eq!((record.kind, record.revision), (kind, revision));
+                match kind {
+                    RecordKind::Note => {
+                        assert_eq!(revision, 2);
+                        assert_eq!(record.payload.as_slice(), b"Historical note");
+                    }
+                    RecordKind::Attachment => {
+                        assert_eq!(record.payload.as_slice(), &[0, 255, 128, 42])
+                    }
+                    _ => panic!("Неожиданный тип записи"),
+                }
+            }
+            assert_eq!(std::fs::read(path).unwrap(), bytes);
+        }
+    }
+
+    #[test]
+    fn historical_containers_reject_bad_password_and_tampered_bytes() {
+        for (_, bytes) in FIXTURES {
+            assert!(matches!(
+                VaultStore::unlock(bytes, b"wrong"),
+                Err(VaultError::Decryption)
+            ));
+            let mut damaged = bytes.to_vec();
+            *damaged.last_mut().unwrap() ^= 1;
+            assert!(matches!(
+                VaultStore::unlock(&damaged, FIXTURE_PASSWORD),
+                Err(VaultError::Decryption)
+            ));
+            damaged[8..10].copy_from_slice(&99u16.to_le_bytes());
+            assert!(matches!(
+                VaultStore::unlock(&damaged, FIXTURE_PASSWORD),
+                Err(VaultError::InvalidEnvelope)
+            ));
+        }
+    }
+
     #[test]
     fn test_vault_roundtrip() {
         let mut store = VaultStore::create_named("Personal Vault").unwrap();
-        let id1 = store.insert(RecordKind::Note, b"Secret Note Payload".to_vec()).unwrap();
-        let id2 = store.insert(RecordKind::Account, b"Account Credentials".to_vec()).unwrap();
+        let id1 = store
+            .insert(RecordKind::Note, b"Secret Note Payload".to_vec())
+            .unwrap();
+        let id2 = store
+            .insert(RecordKind::Account, b"Account Credentials".to_vec())
+            .unwrap();
 
         let password = b"StrongPassword_1234!";
         let committed = store.commit_with_password(password).unwrap();
@@ -552,7 +836,9 @@ mod tests {
     #[test]
     fn test_change_password() {
         let mut store = VaultStore::create_named("Test").unwrap();
-        let id = store.insert(RecordKind::Secret, b"Key123".to_vec()).unwrap();
+        let id = store
+            .insert(RecordKind::Secret, b"Key123".to_vec())
+            .unwrap();
         let _ = store.commit_with_password(b"old_pass").unwrap();
 
         store.change_password(b"new_pass").unwrap();

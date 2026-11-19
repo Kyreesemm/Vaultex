@@ -14,6 +14,8 @@ pub struct CloudVaultItem {
 #[derive(Deserialize)]
 struct DriveFileListResponse {
     files: Option<Vec<DriveFileItem>>,
+    #[serde(rename = "nextPageToken")]
+    next_page_token: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -39,39 +41,49 @@ const DRIVE_UPLOAD_MULTIPART_URL: &str =
 
 pub fn list_drive_vaults(
     access_token: &str,
-    extension: &str,
 ) -> Result<Vec<CloudVaultItem>, String> {
     let clean_token = access_token.trim();
     if clean_token.is_empty() {
         return Err("Требуется Google Drive Access Token".to_string());
     }
 
-    let ext = extension.trim_start_matches('.');
-    let query = format!("name contains '.{ext}' and trashed = false");
-    let url = format!(
-        "{}?q={}&fields=files(id,name,size,modifiedTime)",
-        DRIVE_FILES_URL,
-        urlencoding_simple(&query)
-    );
-
-    let response = ureq::get(&url)
-        .set("Authorization", &format!("Bearer {clean_token}"))
-        .call()
-        .map_err(|e| format!("Ошибка запроса к Google Drive: {e}"))?;
-
-    let parsed: DriveFileListResponse = response
-        .into_json()
-        .map_err(|e| format!("Ошибка парсинга ответа Google Drive: {e}"))?;
-
+    // Drive ищет по префиксу имени, поэтому расширения фильтруем локально.
     let mut result = Vec::new();
-    if let Some(files) = parsed.files {
-        for f in files {
+    let mut page_token: Option<String> = None;
+    loop {
+        let mut url = format!(
+            "{}?q={}&fields=nextPageToken,files(id,name,size,modifiedTime)&pageSize=1000",
+            DRIVE_FILES_URL,
+            urlencoding_simple("trashed = false and mimeType != 'application/vnd.google-apps.folder'")
+        );
+        if let Some(token) = page_token.as_deref() {
+            url.push_str("&pageToken=");
+            url.push_str(&urlencoding_simple(token));
+        }
+        let parsed: DriveFileListResponse = ureq::get(&url)
+            .set("Authorization", &format!("Bearer {clean_token}"))
+            .call()
+            .map_err(|e| format!("Ошибка запроса к Google Drive: {e}"))?
+            .into_json()
+            .map_err(|e| format!("Ошибка парсинга ответа Google Drive: {e}"))?;
+
+        for file in parsed.files.into_iter().flatten() {
+            let (Some(id), Some(name)) = (file.id, file.name) else {
+                continue;
+            };
+            if !crate::container::is_vault_path(Path::new(&name)) {
+                continue;
+            }
             result.push(CloudVaultItem {
-                id: f.id.unwrap_or_default(),
-                name: f.name.unwrap_or_default(),
-                size_bytes: f.size.and_then(|s| s.parse::<u64>().ok()).unwrap_or(0),
-                modified_time: f.modified_time.unwrap_or_default(),
+                id,
+                name,
+                size_bytes: file.size.and_then(|s| s.parse().ok()).unwrap_or(0),
+                modified_time: file.modified_time.unwrap_or_default(),
             });
+        }
+        page_token = parsed.next_page_token.filter(|token| !token.is_empty());
+        if page_token.is_none() {
+            break;
         }
     }
 

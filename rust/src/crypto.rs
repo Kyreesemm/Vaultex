@@ -49,6 +49,8 @@ pub enum VaultError {
     Encryption,
     #[error("decryption failed or invalid password")]
     Decryption,
+    #[error("legacy vault formats are read-only until explicit conversion")]
+    LegacyReadOnly,
     #[error("vault session has not been initialized with a password")]
     MissingWrappedKey,
     #[error("payload exceeds maximum allowed block size")]
@@ -71,7 +73,9 @@ pub struct VaultKey([u8; KEY_LENGTH]);
 impl VaultKey {
     pub fn generate() -> Result<Self, VaultError> {
         let mut key = [0u8; KEY_LENGTH];
-        OsRng.try_fill_bytes(&mut key).map_err(|_| VaultError::Randomness)?;
+        OsRng
+            .try_fill_bytes(&mut key)
+            .map_err(|_| VaultError::Randomness)?;
         Ok(Self(key))
     }
 
@@ -93,7 +97,9 @@ impl VaultCrypto {
         associated_data: &[u8],
     ) -> Result<KeyEnvelope, VaultError> {
         let mut nonce = [0u8; NONCE_LENGTH];
-        OsRng.try_fill_bytes(&mut nonce).map_err(|_| VaultError::Randomness)?;
+        OsRng
+            .try_fill_bytes(&mut nonce)
+            .map_err(|_| VaultError::Randomness)?;
         let ciphertext = encrypt_aes_gcm(key, &nonce, plaintext, associated_data)?;
         Ok(KeyEnvelope { nonce, ciphertext })
     }
@@ -106,12 +112,8 @@ impl VaultCrypto {
         if envelope.ciphertext.len() < AUTH_TAG_LENGTH {
             return Err(VaultError::InvalidEnvelope);
         }
-        let plaintext = decrypt_aes_gcm(
-            key,
-            &envelope.nonce,
-            &envelope.ciphertext,
-            associated_data,
-        )?;
+        let plaintext =
+            decrypt_aes_gcm(key, &envelope.nonce, &envelope.ciphertext, associated_data)?;
         Ok(Zeroizing::new(plaintext))
     }
 }
@@ -149,7 +151,13 @@ fn encrypt_aes_gcm(
     let cipher = Aes256Gcm::new(cipher_key);
     let nonce = Nonce::from_slice(nonce);
     cipher
-        .encrypt(nonce, Payload { msg: plaintext, aad: associated_data })
+        .encrypt(
+            nonce,
+            Payload {
+                msg: plaintext,
+                aad: associated_data,
+            },
+        )
         .map_err(|_| VaultError::Encryption)
 }
 
@@ -163,7 +171,13 @@ fn decrypt_aes_gcm(
     let cipher = Aes256Gcm::new(cipher_key);
     let nonce = Nonce::from_slice(nonce);
     cipher
-        .decrypt(nonce, Payload { msg: ciphertext, aad: associated_data })
+        .decrypt(
+            nonce,
+            Payload {
+                msg: ciphertext,
+                aad: associated_data,
+            },
+        )
         .map_err(|_| VaultError::Decryption)
 }
 
@@ -184,18 +198,28 @@ mod tests {
     #[test]
     fn test_argon2id_derivation() {
         let salt = [42u8; SALT_LENGTH];
-        let key1 = derive_key_with_params(b"password123", &salt, KdfParams {
-            memory_kib: 8192,
-            iterations: 1,
-            parallelism: 1,
-            output_length: 32,
-        }).unwrap();
-        let key2 = derive_key_with_params(b"password123", &salt, KdfParams {
-            memory_kib: 8192,
-            iterations: 1,
-            parallelism: 1,
-            output_length: 32,
-        }).unwrap();
+        let key1 = derive_key_with_params(
+            b"password123",
+            &salt,
+            KdfParams {
+                memory_kib: 8192,
+                iterations: 1,
+                parallelism: 1,
+                output_length: 32,
+            },
+        )
+        .unwrap();
+        let key2 = derive_key_with_params(
+            b"password123",
+            &salt,
+            KdfParams {
+                memory_kib: 8192,
+                iterations: 1,
+                parallelism: 1,
+                output_length: 32,
+            },
+        )
+        .unwrap();
         assert_eq!(key1.as_bytes(), key2.as_bytes());
     }
 }

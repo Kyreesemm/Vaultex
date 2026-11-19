@@ -215,7 +215,7 @@ pub fn list_vault_files(directory: String) -> Vec<LocalVaultItem> {
     if let Ok(entries) = std::fs::read_dir(dir_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().is_some_and(|ext| ext == "vex" || ext == "vault") {
+            if path.is_file() && crate::container::is_vault_path(&path) {
                 let metadata = entry.metadata().ok();
                 let size_bytes = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
                 let last_modified = metadata
@@ -268,7 +268,7 @@ pub fn evaluate_password_strength(password: String) -> PasswordStrengthResult {
 }
 
 pub fn sync_list_drive_vaults(access_token: String) -> Result<Vec<CloudVaultItem>, String> {
-    list_drive_vaults(&access_token, "vex")
+    list_drive_vaults(&access_token)
 }
 
 pub fn sync_upload_vault_to_drive(
@@ -301,4 +301,19 @@ pub fn generate_secure_password(
     include_numbers: bool,
 ) -> String {
     gen_pwd(length.max(8) as usize, include_symbols, include_numbers)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn lists_both_vault_extensions() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["old.vault", "new.VEX", "backup.vault.bak"] {
+            std::fs::write(dir.path().join(name), []).unwrap();
+        }
+        let mut names: Vec<_> = super::list_vault_files(dir.path().to_string_lossy().into_owned())
+            .into_iter().map(|item| item.name).collect();
+        names.sort();
+        assert_eq!(names, ["new", "old"]);
+    }
 }
